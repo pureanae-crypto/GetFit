@@ -320,6 +320,8 @@ function startApp() {
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function getActivePackage() { return state.packages.find(p => p.active) || state.packages[state.packages.length - 1] || null; }
 function formatHours(value) { return (Math.round((value || 0) * 10) / 10).toFixed(1); }
+function formatStatHours(value) { return `${formatHours(value)}<span class="stat-unit">hrs</span>`; }
+function formatToday() { return new Date().toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' }); }
 function getPackageStats(pkg) {
   if (!pkg) return { total: 0, completed: 0, remaining: 0 };
   const completedHrs = state.sessions
@@ -355,19 +357,20 @@ function renderDashboard() {
   const booked = Math.round(bookedHours * 10) / 10;
   const available = Math.round(Math.max(0, stats.remaining - bookedHours) * 10) / 10;
   const bookedSegment = Math.min(booked, Math.max(0, stats.total - stats.completed));
+  const committed = Math.round((stats.completed + booked) * 10) / 10;
 
   document.getElementById('hero-remaining').textContent = pkg ? formatHours(stats.remaining) : '—';
-  document.getElementById('hero-package-name').textContent = pkg ? pkg.name : 'No active package';
+  document.getElementById('hero-package-name').textContent = formatToday();
   document.getElementById('balance-booked-label').textContent = `Booked sessions (${bookedSessions.length})`;
   document.getElementById('balance-booked-hours').textContent = `${formatHours(booked)} hrs`;
   document.getElementById('balance-available-hours').textContent = `${formatHours(available)} hrs`;
-  document.getElementById('stat-completed').textContent = formatHours(stats.completed);
-  document.getElementById('stat-upcoming').textContent = bookedSessions.length;
-  document.getElementById('stat-available').textContent = formatHours(available);
+  document.getElementById('stat-completed').innerHTML = formatStatHours(stats.completed);
+  document.getElementById('stat-upcoming').innerHTML = formatStatHours(booked);
+  document.getElementById('stat-available').innerHTML = formatStatHours(available);
   const progressSection = document.getElementById('progress-section');
   if (pkg && stats.total > 0) {
     progressSection.style.display = 'block';
-    document.getElementById('progress-label').textContent = `${stats.completed} / ${stats.total}`;
+    document.getElementById('progress-label').textContent = `${formatHours(stats.completed)} (${formatHours(committed)}) / ${stats.total} hrs`;
     document.getElementById('progress-completed').style.width = Math.min(100, (stats.completed / stats.total) * 100) + '%';
     document.getElementById('progress-booked').style.width = (bookedSegment / stats.total) * 100 + '%';
     document.getElementById('progress-available').style.width = (available / stats.total) * 100 + '%';
