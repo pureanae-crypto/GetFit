@@ -90,6 +90,8 @@
     font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
     color: var(--gray-400); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200);
   }
+  .view-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--gray-200); padding-bottom: 8px; }
+  .view-title-row .section-label { margin: 0; padding: 0; border: none; }
 
   .balance-as-of {
     margin-top: -8px; font-size: 11px; color: var(--gray-400); letter-spacing: 0.02em;
@@ -294,7 +296,7 @@
   }
   .add-exercise-btn:hover { color: var(--black); }
 
-  /* SESSION VIEW â€” MUSCLE HIGHLIGHTER */
+  /* SESSION VIEW - MUSCLE HIGHLIGHTER */
   .session-detail-wrap { padding: 0; }
   .session-muscle-header { background: #111; color: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; overflow: hidden; }
   .muscle-bodies { display: flex; justify-content: center; gap: 0; margin: 8px auto; max-width: 260px; }
@@ -329,4 +331,5 @@
     .nav-tab { padding: 6px 10px; font-size: 11px; }
     .session-card { flex-wrap: wrap; }
     .bottom-sheet { max-height: 92vh; }
+    .view-title-row { align-items: flex-start; }
   }
