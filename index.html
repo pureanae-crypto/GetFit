@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
+<title>PT Sessions</title>
+<link rel="stylesheet" href="./styles.css">
+
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loading-logo">PT Sessions</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <div style="font-size:11px; color:var(--gray-400); letter-spacing:0.08em;">Connecting...</div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="hidden">
+  <div class="auth-logo">PT Sessions</div>
+  <div class="auth-card">
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-sub">Sign in to access your training log</div>
+    <button class="auth-google-btn" id="sign-in-btn">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+        <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.01c-.72.48-1.63.77-2.7.77-2.08 0-3.84-1.4-4.47-3.29H1.88v2.08A8 8 0 0 0 8.98 17z"/>
+        <path fill="#FBBC05" d="M4.51 10.53A4.77 4.77 0 0 1 4.26 9c0-.53.09-1.04.25-1.53V5.39H1.88A8 8 0 0 0 .98 9c0 1.29.31 2.51.9 3.61l2.63-2.08z"/>
+        <path fill="#EA4335" d="M8.98 3.58c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 .9 5.39L4.51 7.47c.63-1.89 2.4-3.89 4.47-3.89z"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<!-- SYNC -->
+<div id="sync-indicator">
+  <div class="sync-dot" id="sync-dot"></div>
+  <span id="sync-label">Synced</span>
+</div>
+
+<nav>
+  <div class="nav-logo">PT Sessions</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('dashboard')">Overview</button>
+    <button class="nav-tab" onclick="showView('calendar')">Calendar</button>
+    <button class="nav-tab" onclick="showView('log')">Log</button>
+    <button class="nav-tab" onclick="showView('packages')">Packages</button>
+  </div>
+  <div class="nav-user">
+    <span class="nav-user-email" id="nav-user-email"></span>
+    <button class="nav-signout" id="sign-out-btn">Sign out</button>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="view-dashboard" class="view active">
+  <div class="section-label">Session Balance</div>
+  <div class="hero-counter">
+    <div class="hero-number" id="hero-remaining">—</div>
+    <div class="hero-label">hrs remaining<span id="hero-package-name">No active package</span></div>
+  </div>
+  <div class="balance-breakdown">
+    <div class="balance-line"><span id="balance-booked-label">Booked sessions (0)</span><span id="balance-booked-hours">0 hrs</span></div>
+    <div class="balance-line"><span>Available balance</span><span id="balance-available-hours">0 hrs</span></div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-value" id="stat-completed">0</div><div class="stat-label">Hrs Done</div></div>
+    <div class="stat-box"><div class="stat-value" id="stat-upcoming">0</div><div class="stat-label">Upcoming</div></div>
+    <div class="stat-box"><div class="stat-value" id="stat-available">0</div><div class="stat-label">Available Balance</div></div>
+  </div>
+  <div id="progress-section" style="margin-bottom:32px; display:none;">
+    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--gray-400); margin-bottom:4px;">
+      <span>Package Progress</span><span id="progress-label">0 / 0</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-segment progress-completed" id="progress-completed" style="width:0%"></div>
+      <div class="progress-segment progress-booked" id="progress-booked" style="width:0%"></div>
+      <div class="progress-segment progress-available" id="progress-available" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="section-label">Upcoming Sessions</div>
+  <div id="upcoming-list"></div>
+  <button class="btn btn-primary" onclick="openBookModal()" style="margin-top:16px;">+ Book Session</button>
+  <hr style="border:none; border-top:1px solid var(--gray-200); margin:32px 0;">
+  <div class="section-label">Recently Completed</div>
+  <div id="recent-completed-list"></div>
+</div>
+
+<!-- CALENDAR -->
+<div id="view-calendar" class="view">
+  <div class="section-label">Monthly View</div>
+  <div class="calendar-header">
+    <button class="btn btn-ghost" onclick="changeMonth(-1)">← Prev</button>
+    <div class="calendar-month-label" id="cal-month-label"></div>
+    <button class="btn btn-ghost" onclick="changeMonth(1)">Next →</button>
+  </div>
+  <div class="calendar-grid" id="calendar-grid"></div>
+  <div style="margin-top:16px; display:flex; gap:16px; font-size:11px; color:var(--gray-400);">
+    <span>● Booked</span><span>● Completed</span>
+  </div>
+</div>
+
+<!-- LOG -->
+<div id="view-log" class="view">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+    <div class="section-label" style="margin:0; border:none; padding:0;">Session History</div>
+    <button class="btn btn-outline btn-sm" onclick="openBookModal()">+ Book New</button>
+  </div>
+  <div id="log-list"></div>
+</div>
+
+<!-- PACKAGES -->
+<div id="view-packages" class="view">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+    <div class="section-label" style="margin:0; border:none; padding:0;">Packages</div>
+    <button class="btn btn-primary btn-sm" onclick="openPackageModal()">+ New Package</button>
+  </div>
+  <div id="packages-list"></div>
+</div>
+
+<!-- BOOK MODAL -->
+<div class="modal-overlay" id="book-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="book-modal-title">Book Session</div>
+      <button class="btn btn-ghost" onclick="closeModal('book-modal')">✕</button>
+    </div>
+    <div class="form-grid" style="margin-bottom:16px;">
+      <div class="form-group"><label>Date</label><input type="date" id="book-date"></div>
+      <div class="form-group"><label>Time</label><input type="time" id="book-time" value="10:00"></div>
+      <div class="form-group">
+        <label>Duration</label>
+        <select id="book-duration">
+          <option value="0.5">0.5 hr</option>
+          <option value="1.0">1.0 hr</option>
+          <option value="1.5" selected>1.5 hr</option>
+          <option value="2.0">2.0 hr</option>
+          <option value="2.5">2.5 hr</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Location</label><input type="text" id="book-location" placeholder="e.g. California Fitness"></div>
+      <div class="form-group form-full"><label>Notes</label><input type="text" id="book-notes" placeholder="e.g. Leg day, focus on squats"></div>
+    </div>
+    <div style="border-top:1px solid var(--gray-200); padding-top:16px;">
+      <div class="panel-title">Exercises</div>
+      <div id="exercise-rows"></div>
+      <button class="add-exercise-btn" onclick="openExercisePicker('book')">
+        <span style="font-size:18px; line-height:1;">+</span> Add Exercise
+      </button>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal('book-modal')">Cancel</button>
+      <button class="btn btn-outline btn-sm" id="export-ics-btn" onclick="exportICS()" style="display:none;">↓ .ics</button>
+      <button class="btn btn-primary" id="book-save-btn" onclick="saveSession()">Save Session</button>
+    </div>
+    <div class="ics-notice" id="ics-notice" style="display:none;">Download .ics to add to Google / Apple / Android Calendar</div>
+  </div>
+</div>
+
+<!-- COMPLETE MODAL -->
+<div class="modal-overlay" id="complete-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Mark Complete</div>
+      <button class="btn btn-ghost" onclick="closeModal('complete-modal')">✕</button>
+    </div>
+    <div id="complete-session-info" style="margin-bottom:20px; font-size:13px; color:var(--gray-600);"></div>
+    <div class="panel-title">Workout Log</div>
+    <div id="complete-exercise-rows"></div>
+    <button class="add-exercise-btn" onclick="openExercisePicker('complete')">
+      <span style="font-size:18px; line-height:1;">+</span> Add Exercise
+    </button>
+    <div class="form-group" style="margin-top:16px;">
+      <label>Session Notes</label>
+      <textarea id="complete-notes" placeholder="How did it go? Any PRs, pain points..."></textarea>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal('complete-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmComplete()">Mark as Completed</button>
+    </div>
+  </div>
+</div>
+
+<!-- PACKAGE MODAL -->
+<div class="modal-overlay" id="package-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Package</div>
+      <button class="btn btn-ghost" onclick="closeModal('package-modal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full"><label>Package Name</label><input type="text" id="pkg-name" placeholder="e.g. June 2025 — 20 Sessions"></div>
+      <div class="form-group"><label>Payment Date</label><input type="date" id="pkg-date"></div>
+      <div class="form-group"><label>Total Hours Purchased</label><input type="number" id="pkg-sessions" min="0.5" step="0.5" placeholder="e.g. 40"></div>
+      <div class="form-group"><label>Total Cost (HKD)</label><input type="number" id="pkg-cost" placeholder="4800"></div>
+      <div class="form-group"><label>PT Name</label><input type="text" id="pkg-pt" placeholder="Trainer name"></div>
+      <div class="form-group form-full"><label>Notes</label><input type="text" id="pkg-notes" placeholder="e.g. 20-session block, valid 6 months"></div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal('package-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePackage()">Save Package</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW SESSION MODAL -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Session Details</div>
+      <button class="btn btn-ghost" onclick="closeModal('view-modal')">✕</button>
+    </div>
+    <div id="view-session-content"></div>
+    <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;" id="view-modal-actions"></div>
+  </div>
+</div>
+
+<!-- EXERCISE PICKER BOTTOM SHEET -->
+<div class="bottom-sheet-overlay" id="exercise-picker-overlay">
+  <div class="bottom-sheet" id="exercise-picker-sheet">
+    <div class="bottom-sheet-handle"></div>
+    <div class="bottom-sheet-header">
+      <div class="bottom-sheet-title">Choose Exercise</div>
+      <div class="picker-search">
+        <span class="picker-search-icon">🔍</span>
+        <input type="text" id="picker-search-input" placeholder="Search exercises..." oninput="filterPicker()">
+      </div>
+    </div>
+    <div class="picker-cats" id="picker-cats"></div>
+    <div class="picker-list" id="picker-list"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
