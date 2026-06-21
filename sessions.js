@@ -40,7 +40,7 @@ export function sessionCardHTML(s, options = {}) {
   const dur = s.duration ? ` · ${s.duration} hr` : '';
   const loc = s.location ? ` · ${s.location}` : '';
   const notes = s.notes || (s.exercises?.length ? `${s.exercises.length} exercise${s.exercises.length > 1 ? 's' : ''} logged` : '');
-  const dot = { booked: '<span style="color:#22c55e;font-size:10px;line-height:1;">●</span>', completed: '<span style="color:#9ca3af;font-size:10px;line-height:1;">●</span>', cancelled: '<span style="color:#ef4444;font-size:10px;line-height:1;">●</span>' }[s.status] || '';
+  const dot = { booked: '<span class="session-status-dot booked-dot"></span>', completed: '<span class="session-status-dot completed-dot"></span>', cancelled: '<span class="session-status-dot cancelled-dot"></span>' }[s.status] || '';
   const actions = s.status === 'booked'
     ? `<button class="btn btn-ghost btn-sm" onclick="openCompleteModal('${s.id}')">✓ Complete</button>
        <button class="btn btn-ghost btn-sm" onclick="openEditModal('${s.id}')">Edit</button>
@@ -399,8 +399,6 @@ function openViewModal(id) {
   const dt = new Date(s.datetime);
   const pkg = ctx.state.packages.find(p => p.id === s.packageId);
   const exercises = s.exercises || [];
-  const intensityMap = ctx.buildMuscleIntensity(exercises);
-  const hasMuscles = Object.keys(intensityMap).length > 0;
   const totalSets = exercises.reduce((sum, e) => sum + (parseInt(e.sets) || 0), 0);
   const totalReps = exercises.reduce((sum, e) => { const sets = parseInt(e.sets)||0; const reps = parseInt(e.reps)||0; return sum + sets*reps; }, 0);
   const totalVolume = exercises.reduce((sum, e) => { const sets = parseInt(e.sets)||0; const reps = parseInt(e.reps)||0; const weight = parseFloat(e.weight)||0; return sum + sets*reps*weight; }, 0);
@@ -422,25 +420,17 @@ function openViewModal(id) {
       <div class="set-badges">${badges}</div>
     </div>`;
   }).join('');
-  const muscleSection = hasMuscles ? `
-    <div class="session-muscle-header">
-      <div class="muscle-bodies">
-        ${ctx.buildMuscleSVG(intensityMap, 'front')}
-        ${ctx.buildMuscleSVG(intensityMap, 'back')}
-      </div>
-      <div class="session-stats-row">
+  document.getElementById('view-session-content').innerHTML = `
+    <div class="session-detail-wrap">
+      <div style="font-size:18px;font-weight:600;margin-bottom:4px;">${dt.toLocaleDateString('en',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+      <div style="font-size:13px;color:var(--gray-600);margin-bottom:8px;">${dt.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}${s.duration?' · '+s.duration+' hr':''}${s.location?' · '+s.location:''}</div>
+      ${pkg?`<div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Package: ${pkg.name}</div>`:''}
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:16px 0;border-top:1px solid var(--gray-200);border-bottom:1px solid var(--gray-200);">
         <div class="session-stat"><div class="session-stat-val">${totalSets}</div><div class="session-stat-label">Sets</div></div>
         <div class="session-stat"><div class="session-stat-val">${totalReps}</div><div class="session-stat-label">Reps</div></div>
         <div class="session-stat"><div class="session-stat-val">${totalVolume > 0 ? Math.round(totalVolume).toLocaleString() : '—'}</div><div class="session-stat-label">Volume kg</div></div>
       </div>
-    </div>` : '';
-  document.getElementById('view-session-content').innerHTML = `
-    <div class="session-detail-wrap">
-      <div style="font-size:18px;font-weight:600;margin-bottom:4px;">${dt.toLocaleDateString('en',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
-      <div style="font-size:13px;color:var(--gray-600);margin-bottom:${hasMuscles?'16px':'8px'};">${dt.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}${s.duration?' · '+s.duration+' hr':''}${s.location?' · '+s.location:''}</div>
-      ${pkg?`<div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Package: ${pkg.name}</div>`:''}
       ${s.notes?`<div style="font-size:13px;color:var(--gray-600);margin-bottom:12px;">${s.notes}</div>`:''}
-      ${muscleSection}
       ${exDetailHTML ? `<div style="margin-top:16px;">${exDetailHTML}</div>` : ''}
       ${s.completionNotes?`<div style="margin-top:16px;padding:12px;background:var(--gray-100);font-size:13px;font-style:italic;color:var(--gray-600);">"${s.completionNotes}"</div>`:''}
     </div>`;
