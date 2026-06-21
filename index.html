@@ -532,21 +532,6 @@ async function fsDel(collName, id) {
   }
 }
 
-// ===== REALTIME LISTENERS =====
-function startListeners() {
-  // Sessions listener
-  onSnapshot(collection(db, 'sessions'), snap => {
-    state.sessions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    rerenderActive();
-  });
-
-  // Packages listener
-  onSnapshot(collection(db, 'packages'), snap => {
-    state.packages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    rerenderActive();
-  });
-}
-
 function rerenderActive() {
   const active = document.querySelector('.view.active');
   if (!active) return;
