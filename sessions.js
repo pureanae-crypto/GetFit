@@ -8,8 +8,9 @@ export function installSessionHandlers(context) {
   window.openBookModal = openBookModal;
   window.openEditModal = openEditModal;
   window.saveSession = saveSession;
-  window.openCompleteModal = openCompleteModal;
-  window.confirmComplete = confirmComplete;
+  window.openCompleteModal = (id) => openWorkoutLogModal(id, 'log');
+  window.openWorkoutLogModal = openWorkoutLogModal;
+  window.saveWorkoutLog = saveWorkoutLog;
   window.openViewModal = openViewModal;
   window.cancelSession = cancelSession;
   window.deleteSession = deleteSession;
@@ -119,29 +120,38 @@ async function saveSession() {
   ctx.showToast(currentEditId ? 'Session updated' : 'Session scheduled');
 };
 
-// ===== COMPLETE =====
-function openCompleteModal(id) {
+// ===== WORKOUT LOG MODAL =====
+let workoutLogMode = 'log';
+
+function openWorkoutLogModal(id, mode = 'log') {
+  workoutLogMode = mode;
   ctx.state.completingSessionId = id;
   const s = ctx.state.sessions.find(x => x.id === id);
   if (!s) return;
   const dt = new Date(s.datetime);
-  document.getElementById('complete-session-info').textContent =
-    dt.toLocaleDateString('en', { weekday:'long', day:'numeric', month:'long' }) + ' at ' +
-    dt.toLocaleTimeString('en', { hour:'2-digit', minute:'2-digit' });
-  document.getElementById('complete-exercise-rows').innerHTML = '';
-  (s.exercises || []).forEach(e => ctx.addExerciseRow(e, 'complete-exercise-rows'));
+  const dateStr = dt.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  const trainerStr = s.location || '';
+  document.getElementById('wl-subtitle').textContent = trainerStr ? `${dateStr} · ${trainerStr}` : dateStr;
+  document.getElementById('wl-save-btn').textContent = mode === 'edit' ? 'Save Changes' : 'Save & Complete';
+  ctx.loadCxExercises(s.exercises || []);
   document.getElementById('complete-notes').value = s.completionNotes || '';
   ctx.openModal('complete-modal');
-};
+}
 
-async function confirmComplete() {
+async function saveWorkoutLog() {
   const s = ctx.state.sessions.find(x => x.id === ctx.state.completingSessionId);
   if (!s) return;
-  const exercises = ctx.getExerciseRows('complete-exercise-rows');
-  await ctx.fsSet('sessions', s.id, { ...s, status: 'completed', exercises, completionNotes: document.getElementById('complete-notes').value, completedAt: new Date().toISOString() });
+  const exercises = ctx.getCxExercises();
+  const totalVolume = Math.round(exercises.reduce((sum, e) => sum + e.sets.reduce((acc, set) => acc + set.reps * set.weight, 0), 0));
+  const update = { ...s, exercises, totalVolume, completionNotes: document.getElementById('complete-notes').value };
+  if (workoutLogMode === 'log') {
+    update.status = 'completed';
+    update.completedAt = new Date().toISOString();
+  }
+  await ctx.fsSet('sessions', s.id, update);
   ctx.closeModal('complete-modal');
-  ctx.showToast('Session completed ✓');
-};
+  ctx.showToast(workoutLogMode === 'edit' ? 'Workout updated' : 'Session completed ✓');
+}
 
 // ===== VIEW SESSION =====
 function openViewModal(id) {
@@ -196,11 +206,12 @@ function openViewModal(id) {
       ${s.completionNotes?`<div style="margin-top:16px;padding:12px;background:var(--gray-100);font-size:13px;font-style:italic;color:var(--gray-600);">"${s.completionNotes}"</div>`:''}
     </div>`;
   document.getElementById('view-modal-actions').innerHTML = s.status === 'booked'
-    ? `<button class="btn btn-ghost" onclick="closeModal('view-modal');openCompleteModal('${s.id}')">✓ Complete</button>
+    ? `<button class="btn btn-ghost" onclick="closeModal('view-modal');openWorkoutLogModal('${s.id}','log')">✓ Complete</button>
        <button class="btn btn-ghost" onclick="closeModal('view-modal');openEditModal('${s.id}')">Edit</button>
        <button class="btn btn-ghost" onclick="exportSingleICS('${s.id}')">+ Calendar</button>
        <button class="btn btn-danger btn-sm" onclick="cancelSession('${s.id}')">Cancel</button>`
-    : `<button class="btn btn-ghost" onclick="closeModal('view-modal');openEditModal('${s.id}')">Edit</button>
+    : `<button class="btn btn-ghost" onclick="closeModal('view-modal');openWorkoutLogModal('${s.id}','edit')">Edit Workout</button>
+       <button class="btn btn-ghost" onclick="closeModal('view-modal');openEditModal('${s.id}')">Edit Details</button>
        <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>`;
   ctx.openModal('view-modal');
 };
