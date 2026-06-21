@@ -294,12 +294,12 @@ function renderPickerList() {
   const container = document.getElementById('picker-list');
   if (!list.length) { container.innerHTML = `<div class="picker-no-results">No exercises found</div>`; return; }
   container.innerHTML = list.map(ex =>
-    `<div class="picker-item" onclick="selectExercise(${JSON.stringify(ex.name)})">
+    `<button class="picker-item" type="button" data-exercise-name=${JSON.stringify(ex.name)}>
       <div class="picker-item-info">
         <div class="picker-item-name">${ex.name}</div>
         <div class="picker-item-muscles">${ex.muscles.map(m => m.replace(/-/g,' ')).join(', ')}</div>
       </div>
-    </div>`
+    </button>`
   ).join('');
 }
 
@@ -326,6 +326,7 @@ window.selectExercise = function(name) {
       activeCxNameInput.dataset.name = name;
       const block = activeCxNameInput.closest('.cx-block');
       if (w) block.querySelectorAll('.cx-weight').forEach(el => { if (!el.value) el.value = w; });
+      updateCxVolume();
     } else {
       // New exercise — create block + first set row
       const block = makeCxBlock(name);
@@ -339,10 +340,29 @@ window.selectExercise = function(name) {
     const data = { name, sets: '', reps: '', weight: '', muscles: db_entry?.muscles || [] };
     addExerciseRow(data, pickerContext === 'book' ? 'exercise-rows' : 'complete-exercise-rows');
   }
+  activeCxNameInput = null;
   closePicker();
 };
 
-window.closePicker = function() { document.getElementById('exercise-picker-overlay').classList.remove('open'); };
+document.getElementById('picker-list').addEventListener('pointerdown', e => {
+  const item = e.target.closest('.picker-item');
+  if (!item) return;
+  e.preventDefault();
+  e.stopPropagation();
+  selectExercise(item.dataset.exerciseName);
+});
+document.getElementById('picker-list').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const item = e.target.closest('.picker-item');
+  if (!item) return;
+  e.preventDefault();
+  selectExercise(item.dataset.exerciseName);
+});
+document.getElementById('exercise-picker-sheet').addEventListener('pointerdown', e => e.stopPropagation());
+window.closePicker = function() {
+  document.getElementById('exercise-picker-overlay').classList.remove('open');
+  activeCxNameInput = null;
+};
 document.getElementById('exercise-picker-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('exercise-picker-overlay')) closePicker();
 });
