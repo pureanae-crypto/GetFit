@@ -198,7 +198,7 @@ function openViewModal(id) {
   document.getElementById('view-modal-actions').innerHTML = s.status === 'booked'
     ? `<button class="btn btn-ghost" onclick="closeModal('view-modal');openCompleteModal('${s.id}')">✓ Complete</button>
        <button class="btn btn-ghost" onclick="closeModal('view-modal');openEditModal('${s.id}')">Edit</button>
-       <button class="btn btn-ghost" onclick="exportSingleICS('${s.id}')">↓ .ics</button>
+       <button class="btn btn-ghost" onclick="exportSingleICS('${s.id}')">+ Calendar</button>
        <button class="btn btn-danger btn-sm" onclick="cancelSession('${s.id}')">Cancel</button>`
     : `<button class="btn btn-ghost" onclick="closeModal('view-modal');openEditModal('${s.id}')">Edit</button>
        <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>`;
