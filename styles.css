@@ -104,6 +104,7 @@
   .stat-box { padding: 16px 0; border-right: 1px solid var(--gray-200); padding-right: 20px; margin-right: 20px; }
   .stat-box:last-child { border-right: none; margin-right: 0; padding-right: 0; }
   .stat-value { font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+  .stat-unit { font-size: 11px; font-weight: 500; color: var(--gray-400); margin-left: 4px; letter-spacing: 0.04em; }
   .stat-label { font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.1em; }
 
   .session-card {
@@ -278,7 +279,7 @@
   }
   .add-exercise-btn:hover { color: var(--black); }
 
-  /* SESSION VIEW — MUSCLE HIGHLIGHTER */
+  /* SESSION VIEW â€” MUSCLE HIGHLIGHTER */
   .session-detail-wrap { padding: 0; }
   .session-muscle-header { background: #111; color: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; overflow: hidden; }
   .muscle-bodies { display: flex; justify-content: center; gap: 0; margin: 8px auto; max-width: 260px; }
