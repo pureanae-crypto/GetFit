@@ -1,71 +1,7 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import {
-  getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-// ===== FIREBASE =====
-const firebaseConfig = {
-  apiKey: "AIzaSyD-s7p744xyj8LfS_pPL-KYMTsicBmdbAM",
-  authDomain: "getfit-73277.firebaseapp.com",
-  projectId: "getfit-73277",
-  storageBucket: "getfit-73277.firebasestorage.app",
-  messagingSenderId: "703281196969",
-  appId: "1:703281196969:web:c64192870978e2f7035eb8",
-  measurementId: "G-BY3DVLTC03"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-
-// ===== AUTH =====
-const ALLOWED_EMAILS = [
-  'pureanae@gmail.com',
-  'alexanderholam@gmail.com'
-];
-
-function hideLoading() { document.getElementById('loading-screen').style.display = 'none'; }
-function showAuthError(msg) { document.getElementById('auth-error').textContent = msg; }
-
-onAuthStateChanged(auth, (user) => {
-  if (user && ALLOWED_EMAILS.includes(user.email)) {
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('nav-user-email').textContent = user.email;
-    startApp();
-  } else if (user) {
-    // Signed in but not the allowed account
-    signOut(auth);
-    hideLoading();
-    document.getElementById('auth-screen').classList.remove('hidden');
-    showAuthError('This Google account is not authorised.');
-  } else {
-    // Not signed in
-    hideLoading();
-    document.getElementById('auth-screen').classList.remove('hidden');
-  }
-});
-
-document.getElementById('sign-in-btn').addEventListener('click', async () => {
-  const btn = document.getElementById('sign-in-btn');
-  btn.disabled = true;
-  showAuthError('');
-  try {
-    await signInWithPopup(auth, provider);
-    // onAuthStateChanged handles the rest
-  } catch (e) {
-    btn.disabled = false;
-    if (e.code !== 'auth/popup-closed-by-user') {
-      showAuthError('Sign-in failed. Please try again.');
-    }
-  }
-});
-
-document.getElementById('sign-out-btn').addEventListener('click', () => {
-  signOut(auth);
-});
+import { EXERCISE_DB, CATS } from "./exercises.js";
+import { configureFirebase, initAuth, subscribeAppData, fsSet, fsDel } from "./firebase.js";
+import { renderDashboard as renderDashboardView } from "./dashboard.js";
+import { installSessionHandlers, renderLog as renderSessionLog } from "./sessions.js";
 
 // ===== STATE =====
 let state = {
@@ -74,104 +10,8 @@ let state = {
   calendarMonth: new Date().getMonth(),
   completingSessionId: null
 };
-let currentEditId = null;
 let pickerContext = 'book';
 let pickerActiveCat = 'All';
-
-// ===== EXERCISE DATABASE =====
-const EXERCISE_DB = [
-  { name:'Hip Thrust', cat:'Glutes', icon:'🍑', muscles:['gluteal','hamstring'] },
-  { name:'Romanian Deadlift', cat:'Glutes', icon:'🍑', muscles:['hamstring','gluteal','lower-back'] },
-  { name:'Cable Kickback', cat:'Glutes', icon:'🍑', muscles:['gluteal'] },
-  { name:'Machine Standing Hip Abduction', cat:'Glutes', icon:'🍑', muscles:['abductors','gluteal'] },
-  { name:'Machine Seated Hip Abduction', cat:'Glutes', icon:'🍑', muscles:['abductors','gluteal'] },
-  { name:'Single Leg Cable Kickback', cat:'Glutes', icon:'🍑', muscles:['gluteal','hamstring'] },
-  { name:'Sumo Squat', cat:'Glutes', icon:'🍑', muscles:['gluteal','quadriceps','adductors'] },
-  { name:'Hip Abduction Machine', cat:'Glutes', icon:'🍑', muscles:['abductors','gluteal'] },
-  { name:'Glute Bridge', cat:'Glutes', icon:'🍑', muscles:['gluteal','hamstring'] },
-  { name:'Donkey Kick', cat:'Glutes', icon:'🍑', muscles:['gluteal'] },
-  { name:'Squat', cat:'Legs', icon:'🦵', muscles:['quadriceps','gluteal','hamstring'] },
-  { name:'Leg Press', cat:'Legs', icon:'🦵', muscles:['quadriceps','gluteal','hamstring'] },
-  { name:'Leg Extension', cat:'Legs', icon:'🦵', muscles:['quadriceps'] },
-  { name:'Leg Curl', cat:'Legs', icon:'🦵', muscles:['hamstring'] },
-  { name:'Walking Lunge', cat:'Legs', icon:'🦵', muscles:['quadriceps','gluteal','hamstring'] },
-  { name:'Reverse Lunge', cat:'Legs', icon:'🦵', muscles:['quadriceps','gluteal'] },
-  { name:'Bulgarian Split Squat', cat:'Legs', icon:'🦵', muscles:['quadriceps','gluteal'] },
-  { name:'Hack Squat', cat:'Legs', icon:'🦵', muscles:['quadriceps','gluteal'] },
-  { name:'Goblet Squat', cat:'Legs', icon:'🦵', muscles:['quadriceps','gluteal'] },
-  { name:'Calf Raise', cat:'Legs', icon:'🦵', muscles:['calves'] },
-  { name:'Seated Calf Raise', cat:'Legs', icon:'🦵', muscles:['calves'] },
-  { name:'Lying Leg Curl', cat:'Legs', icon:'🦵', muscles:['hamstring'] },
-  { name:'Standing Leg Curl', cat:'Legs', icon:'🦵', muscles:['hamstring'] },
-  { name:'Adductor Machine', cat:'Legs', icon:'🦵', muscles:['adductors'] },
-  { name:'Step Up', cat:'Legs', icon:'🦵', muscles:['quadriceps','gluteal'] },
-  { name:'Lat Pulldown', cat:'Back', icon:'🏋️', muscles:['lats','biceps'] },
-  { name:'Seated Cable Row', cat:'Back', icon:'🏋️', muscles:['lats','rhomboids','biceps'] },
-  { name:'Bent Over Row', cat:'Back', icon:'🏋️', muscles:['lats','rhomboids','rear-deltoids'] },
-  { name:'T-Bar Row', cat:'Back', icon:'🏋️', muscles:['lats','rhomboids'] },
-  { name:'Deadlift', cat:'Back', icon:'🏋️', muscles:['lower-back','gluteal','hamstring','traps'] },
-  { name:'Pull Up', cat:'Back', icon:'🏋️', muscles:['lats','biceps'] },
-  { name:'Chin Up', cat:'Back', icon:'🏋️', muscles:['lats','biceps'] },
-  { name:'Cable Straight Arm Pulldown', cat:'Back', icon:'🏋️', muscles:['lats'] },
-  { name:'Single Arm Dumbbell Row', cat:'Back', icon:'🏋️', muscles:['lats','rhomboids'] },
-  { name:'Smith Machine Row', cat:'Back', icon:'🏋️', muscles:['lats','rhomboids'] },
-  { name:'Face Pull', cat:'Back', icon:'🏋️', muscles:['rear-deltoids','traps'] },
-  { name:'Hyperextension', cat:'Back', icon:'🏋️', muscles:['lower-back','gluteal'] },
-  { name:'Good Morning', cat:'Back', icon:'🏋️', muscles:['lower-back','hamstring'] },
-  { name:'Barbell Row', cat:'Back', icon:'🏋️', muscles:['lats','rhomboids','biceps'] },
-  { name:'Barbell Bench Press', cat:'Chest', icon:'💪', muscles:['chest','triceps','front-deltoids'] },
-  { name:'Dumbbell Bench Press', cat:'Chest', icon:'💪', muscles:['chest','triceps','front-deltoids'] },
-  { name:'Incline Bench Press', cat:'Chest', icon:'💪', muscles:['chest','front-deltoids','triceps'] },
-  { name:'Decline Bench Press', cat:'Chest', icon:'💪', muscles:['chest','triceps'] },
-  { name:'Machine Chest Press', cat:'Chest', icon:'💪', muscles:['chest','triceps'] },
-  { name:'Cable Fly', cat:'Chest', icon:'💪', muscles:['chest'] },
-  { name:'Pec Deck Fly', cat:'Chest', icon:'💪', muscles:['chest'] },
-  { name:'Dumbbell Fly', cat:'Chest', icon:'💪', muscles:['chest'] },
-  { name:'Push Up', cat:'Chest', icon:'💪', muscles:['chest','triceps','front-deltoids'] },
-  { name:'Dip', cat:'Chest', icon:'💪', muscles:['chest','triceps'] },
-  { name:'Overhead Press', cat:'Shoulders', icon:'🔝', muscles:['front-deltoids','side-deltoids','triceps'] },
-  { name:'Dumbbell Shoulder Press', cat:'Shoulders', icon:'🔝', muscles:['front-deltoids','side-deltoids','triceps'] },
-  { name:'Lateral Raise', cat:'Shoulders', icon:'🔝', muscles:['side-deltoids'] },
-  { name:'Dumbbell Seated Lateral Raise', cat:'Shoulders', icon:'🔝', muscles:['side-deltoids'] },
-  { name:'Front Raise', cat:'Shoulders', icon:'🔝', muscles:['front-deltoids'] },
-  { name:'Rear Delt Fly', cat:'Shoulders', icon:'🔝', muscles:['rear-deltoids'] },
-  { name:'Arnold Press', cat:'Shoulders', icon:'🔝', muscles:['front-deltoids','side-deltoids','rear-deltoids'] },
-  { name:'Upright Row', cat:'Shoulders', icon:'🔝', muscles:['side-deltoids','traps'] },
-  { name:'Cable Lateral Raise', cat:'Shoulders', icon:'🔝', muscles:['side-deltoids'] },
-  { name:'Machine Shoulder Press', cat:'Shoulders', icon:'🔝', muscles:['front-deltoids','side-deltoids'] },
-  { name:'Barbell Curl', cat:'Arms', icon:'💪', muscles:['biceps'] },
-  { name:'Dumbbell Curl', cat:'Arms', icon:'💪', muscles:['biceps'] },
-  { name:'Hammer Curl', cat:'Arms', icon:'💪', muscles:['biceps'] },
-  { name:'Preacher Curl', cat:'Arms', icon:'💪', muscles:['biceps'] },
-  { name:'Cable Curl', cat:'Arms', icon:'💪', muscles:['biceps'] },
-  { name:'Concentration Curl', cat:'Arms', icon:'💪', muscles:['biceps'] },
-  { name:'Tricep Pushdown', cat:'Arms', icon:'💪', muscles:['triceps'] },
-  { name:'Skull Crusher', cat:'Arms', icon:'💪', muscles:['triceps'] },
-  { name:'Overhead Tricep Extension', cat:'Arms', icon:'💪', muscles:['triceps'] },
-  { name:'Cable Tricep Kickback', cat:'Arms', icon:'💪', muscles:['triceps'] },
-  { name:'Close Grip Bench Press', cat:'Arms', icon:'💪', muscles:['triceps','chest'] },
-  { name:'Wrist Curl', cat:'Arms', icon:'💪', muscles:['forearm'] },
-  { name:'Plank', cat:'Core', icon:'🔥', muscles:['abs'] },
-  { name:'Crunch', cat:'Core', icon:'🔥', muscles:['abs'] },
-  { name:'Cable Crunch', cat:'Core', icon:'🔥', muscles:['abs'] },
-  { name:'Leg Raise', cat:'Core', icon:'🔥', muscles:['abs'] },
-  { name:'Russian Twist', cat:'Core', icon:'🔥', muscles:['abs','obliques'] },
-  { name:'Side Plank', cat:'Core', icon:'🔥', muscles:['obliques'] },
-  { name:'Ab Rollout', cat:'Core', icon:'🔥', muscles:['abs'] },
-  { name:'Hanging Leg Raise', cat:'Core', icon:'🔥', muscles:['abs'] },
-  { name:'Mountain Climber', cat:'Core', icon:'🔥', muscles:['abs'] },
-  { name:'Dead Bug', cat:'Core', icon:'🔥', muscles:['abs'] },
-  { name:'Power Clean', cat:'Full Body', icon:'⚡', muscles:['quadriceps','gluteal','hamstring','traps','lower-back'] },
-  { name:'Kettlebell Swing', cat:'Full Body', icon:'⚡', muscles:['gluteal','hamstring','lower-back'] },
-  { name:'Burpee', cat:'Full Body', icon:'⚡', muscles:['chest','quadriceps','abs'] },
-  { name:'Treadmill', cat:'Cardio', icon:'🏃', muscles:['quadriceps','calves','hamstring'] },
-  { name:'Elliptical', cat:'Cardio', icon:'🏃', muscles:['quadriceps','hamstring','calves'] },
-  { name:'Rowing Machine', cat:'Cardio', icon:'🏃', muscles:['lats','rhomboids','biceps','quadriceps'] },
-  { name:'Stair Climber', cat:'Cardio', icon:'🏃', muscles:['gluteal','quadriceps','calves'] },
-  { name:'Battle Ropes', cat:'Cardio', icon:'🏃', muscles:['front-deltoids','side-deltoids','abs'] },
-];
-
-const CATS = ['All', ...new Set(EXERCISE_DB.map(e => e.cat))];
 
 // ===== MUSCLE SVG HIGHLIGHTER =====
 const MUSCLE_COLORS = { 1: '#f4a261', 2: '#e76f51', 3: '#c1440e' };
@@ -267,27 +107,9 @@ function buildMuscleIntensity(exercises) {
   return intensityMap;
 }
 
-// ===== SYNC UI =====
-function setSyncStatus(status) {
-  const dot = document.getElementById('sync-dot');
-  const label = document.getElementById('sync-label');
-  const ind = document.getElementById('sync-indicator');
-  dot.className = 'sync-dot ' + status;
-  label.textContent = { syncing: 'Saving...', synced: 'Synced', error: 'Offline' }[status] || '';
-  ind.classList.add('visible');
-  if (status === 'synced') setTimeout(() => ind.classList.remove('visible'), 2000);
-}
-
-async function fsSet(collName, id, data) {
-  setSyncStatus('syncing');
-  try { await setDoc(doc(db, collName, id), data); setSyncStatus('synced'); }
-  catch(e) { setSyncStatus('error'); showToast('Save failed — check connection'); throw e; }
-}
-async function fsDel(collName, id) {
-  setSyncStatus('syncing');
-  try { await deleteDoc(doc(db, collName, id)); setSyncStatus('synced'); }
-  catch(e) { setSyncStatus('error'); showToast('Delete failed'); throw e; }
-}
+// ===== APP START =====
+function hideLoading() { document.getElementById('loading-screen').style.display = 'none'; }
+function showAuthError(msg) { document.getElementById('auth-error').textContent = msg; }
 
 function rerenderActive() {
   const active = document.querySelector('.view.active');
@@ -299,21 +121,8 @@ function rerenderActive() {
   if (id === 'view-packages') renderPackages();
 }
 
-// ===== START APP (only called after auth) =====
 function startApp() {
-  let packagesLoaded = false, sessionsLoaded = false;
-  function checkLoaded() {
-    if (packagesLoaded && sessionsLoaded) { hideLoading(); renderDashboard(); }
-  }
-  onSnapshot(collection(db, 'sessions'), snap => {
-    state.sessions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    sessionsLoaded = true; checkLoaded(); rerenderActive();
-  });
-  onSnapshot(collection(db, 'packages'), snap => {
-    state.packages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    packagesLoaded = true; checkLoaded(); rerenderActive();
-  });
-  setTimeout(hideLoading, 4000);
+  subscribeAppData(state, { hideLoading, renderDashboard, rerenderActive });
 }
 
 // ===== UTILS =====
@@ -348,68 +157,14 @@ window.showView = function(name) {
 
 // ===== DASHBOARD =====
 function renderDashboard() {
-  const pkg = getActivePackage();
-  const stats = getPackageStats(pkg);
-  const bookedSessions = state.sessions
-    .filter(s => s.status === 'booked')
-    .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
-  const bookedHours = bookedSessions.reduce((sum, s) => sum + (parseFloat(s.duration) || 1.0), 0);
-  const booked = Math.round(bookedHours * 10) / 10;
-  const available = Math.round(Math.max(0, stats.remaining - bookedHours) * 10) / 10;
-  const bookedSegment = Math.min(booked, Math.max(0, stats.total - stats.completed));
-
-  document.getElementById('hero-remaining').textContent = pkg ? formatHours(stats.remaining) : '—';
-  document.getElementById('hero-package-name').textContent = formatToday();
-  document.getElementById('balance-booked-label').textContent = `Booked sessions (${bookedSessions.length})`;
-  document.getElementById('balance-booked-hours').textContent = `${formatHours(booked)} hrs`;
-  document.getElementById('balance-available-hours').textContent = `${formatHours(available)} hrs`;
-  document.getElementById('stat-completed').innerHTML = formatStatHours(stats.completed);
-  document.getElementById('stat-upcoming').innerHTML = formatStatHours(booked);
-  document.getElementById('stat-available').innerHTML = formatStatHours(available);
-  const progressSection = document.getElementById('progress-section');
-  if (pkg && stats.total > 0) {
-    progressSection.style.display = 'block';
-    document.getElementById('progress-label').textContent = `${formatHours(stats.completed)} (${formatHours(booked)}) / ${stats.total} hrs`;
-    document.getElementById('progress-completed').style.width = Math.min(100, (stats.completed / stats.total) * 100) + '%';
-    document.getElementById('progress-booked').style.width = (bookedSegment / stats.total) * 100 + '%';
-    document.getElementById('progress-available').style.width = (available / stats.total) * 100 + '%';
-  } else { progressSection.style.display = 'none'; }
-  const visibleUpcoming = bookedSessions.slice(0, 5);
-  document.getElementById('upcoming-list').innerHTML = bookedSessions.length === 0
-    ? `<div class="empty-state"><div class="empty-state-title">No upcoming sessions</div></div>`
-    : visibleUpcoming.map(sessionCardHTML).join('');
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const recentCompleted = state.sessions
-    .filter(s => s.status === 'completed' && new Date(s.completedAt || s.datetime) >= thirtyDaysAgo)
-    .sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
-  document.getElementById('recent-completed-list').innerHTML = recentCompleted.length === 0
-    ? `<div class="empty-state"><div class="empty-state-title">No completed sessions in the last 30 days</div></div>`
-    : recentCompleted.map(sessionCardHTML).join('');
-}
-
-function sessionCardHTML(s) {
-  const dt = new Date(s.datetime);
-  const day = dt.getDate();
-  const month = dt.toLocaleString('en', { month: 'short' }).toUpperCase();
-  const time = dt.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
-  const dur = s.duration ? ` · ${s.duration} hr` : '';
-  const loc = s.location ? ` · ${s.location}` : '';
-  const notes = s.notes || (s.exercises?.length ? `${s.exercises.length} exercise${s.exercises.length > 1 ? 's' : ''} logged` : '');
-  const badge = { booked: '<span class="badge badge-pending">Upcoming</span>', completed: '<span class="badge badge-done">Done</span>', cancelled: '<span class="badge badge-cancelled">Cancelled</span>' }[s.status] || '';
-  const actions = s.status === 'booked'
-    ? `<button class="btn btn-ghost btn-sm" onclick="openCompleteModal('${s.id}')">✓ Complete</button>
-       <button class="btn btn-ghost btn-sm" onclick="openEditModal('${s.id}')">Edit</button>
-       <button class="btn btn-ghost btn-sm" onclick="exportSingleICS('${s.id}')">↓ .ics</button>`
-    : `<button class="btn btn-ghost btn-sm" onclick="openViewModal('${s.id}')">View</button>`;
-  return `<div class="session-card ${s.status === 'completed' ? 'completed' : ''}">
-    <div class="session-date-block"><div class="session-day">${day}</div><div class="session-month">${month}</div></div>
-    <div class="session-info">
-      <div class="session-time">${time}${dur}${loc}</div>
-      ${notes ? `<div class="session-notes">${notes}</div>` : ''}
-    </div>
-    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">${badge}${actions}</div>
-  </div>`;
+  renderDashboardView({
+    state,
+    getActivePackage,
+    getPackageStats,
+    formatHours,
+    formatStatHours,
+    formatToday
+  });
 }
 
 // ===== CALENDAR =====
@@ -419,7 +174,7 @@ function renderCalendar() {
   const today = new Date();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div class="calendar-day-header">${d}</div>`).join('');
+  let html = ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => `<div class="calendar-day-header">${d}</div>`).join('');
   for (let i = 0; i < firstDay; i++) html += `<div class="calendar-cell empty"></div>`;
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -463,24 +218,7 @@ window.calCellClick = function(dateStr) {
 
 // ===== LOG =====
 function renderLog() {
-  const sorted = [...state.sessions].sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
-  if (!sorted.length) {
-    document.getElementById('log-list').innerHTML = `<div class="empty-state"><div class="empty-state-title">No sessions yet</div></div>`;
-    return;
-  }
-  document.getElementById('log-list').innerHTML = sorted.map(s => {
-    let exHtml = '';
-    if (s.exercises?.length) {
-      exHtml = `<div class="workout-detail">
-        <div class="workout-exercise-row" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-400);">
-          <span>Exercise</span><span>Sets</span><span>Reps</span><span>Weight</span>
-        </div>
-        ${s.exercises.map(e => `<div class="workout-exercise-row"><span>${e.name||'—'}</span><span>${e.sets||'—'}</span><span>${e.reps||'—'}</span><span>${e.weight?e.weight+' kg':'—'}</span></div>`).join('')}
-      </div>`;
-    }
-    const notesHtml = s.completionNotes ? `<div style="margin-top:8px;font-size:12px;color:var(--gray-600);font-style:italic;">"${s.completionNotes}"</div>` : '';
-    return `<div style="margin-bottom:8px;">${sessionCardHTML(s)}${exHtml}${notesHtml}</div>`;
-  }).join('');
+  renderSessionLog({ state });
 }
 
 // ===== PACKAGES =====
@@ -616,147 +354,6 @@ function getExerciseRows(containerId) {
   }, []);
 }
 
-// ===== BOOK SESSION =====
-window.openBookModal = function() {
-  currentEditId = null;
-  document.getElementById('book-modal-title').textContent = 'Book Session';
-  document.getElementById('book-save-btn').textContent = 'Save Session';
-  document.getElementById('export-ics-btn').style.display = 'none';
-  document.getElementById('ics-notice').style.display = 'none';
-  if (!document.getElementById('book-date').value)
-    document.getElementById('book-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('exercise-rows').innerHTML = '';
-  openModal('book-modal');
-};
-
-window.openEditModal = function(id) {
-  const s = state.sessions.find(x => x.id === id);
-  if (!s) return;
-  currentEditId = id;
-  document.getElementById('book-modal-title').textContent = 'Edit Session';
-  document.getElementById('book-save-btn').textContent = 'Update Session';
-  document.getElementById('export-ics-btn').style.display = 'inline-flex';
-  document.getElementById('ics-notice').style.display = 'block';
-  const dt = new Date(s.datetime);
-  document.getElementById('book-date').value = dt.toISOString().split('T')[0];
-  document.getElementById('book-time').value = dt.toTimeString().slice(0,5);
-  document.getElementById('book-duration').value = s.duration || '1.5';
-  document.getElementById('book-location').value = s.location || '';
-  document.getElementById('book-notes').value = s.notes || '';
-  document.getElementById('exercise-rows').innerHTML = '';
-  (s.exercises || []).forEach(e => addExerciseRow(e, 'exercise-rows'));
-  openModal('book-modal');
-};
-
-window.saveSession = async function() {
-  const date = document.getElementById('book-date').value;
-  const time = document.getElementById('book-time').value;
-  if (!date) { showToast('Please select a date'); return; }
-  const datetime = `${date}T${time||'10:00'}`;
-  const pkg = getActivePackage();
-  const id = currentEditId || genId();
-  const existing = currentEditId ? state.sessions.find(x => x.id === currentEditId) : null;
-  const sessionData = {
-    datetime, duration: document.getElementById('book-duration').value,
-    location: document.getElementById('book-location').value,
-    notes: document.getElementById('book-notes').value,
-    exercises: getExerciseRows('exercise-rows'),
-    status: existing?.status || 'booked',
-    packageId: existing?.packageId || (pkg ? pkg.id : null),
-    completionNotes: existing?.completionNotes || null,
-    completedAt: existing?.completedAt || null,
-  };
-  await fsSet('sessions', id, sessionData);
-  closeModal('book-modal');
-  showToast(currentEditId ? 'Session updated' : 'Session booked');
-};
-
-// ===== COMPLETE =====
-window.openCompleteModal = function(id) {
-  state.completingSessionId = id;
-  const s = state.sessions.find(x => x.id === id);
-  if (!s) return;
-  const dt = new Date(s.datetime);
-  document.getElementById('complete-session-info').textContent =
-    dt.toLocaleDateString('en', { weekday:'long', day:'numeric', month:'long' }) + ' at ' +
-    dt.toLocaleTimeString('en', { hour:'2-digit', minute:'2-digit' });
-  document.getElementById('complete-exercise-rows').innerHTML = '';
-  (s.exercises || []).forEach(e => addExerciseRow(e, 'complete-exercise-rows'));
-  document.getElementById('complete-notes').value = s.completionNotes || '';
-  openModal('complete-modal');
-};
-
-window.confirmComplete = async function() {
-  const s = state.sessions.find(x => x.id === state.completingSessionId);
-  if (!s) return;
-  const exercises = getExerciseRows('complete-exercise-rows');
-  await fsSet('sessions', s.id, { ...s, status: 'completed', exercises, completionNotes: document.getElementById('complete-notes').value, completedAt: new Date().toISOString() });
-  closeModal('complete-modal');
-  showToast('Session completed ✓');
-};
-
-// ===== VIEW SESSION =====
-window.openViewModal = function(id) {
-  const s = state.sessions.find(x => x.id === id);
-  if (!s) return;
-  const dt = new Date(s.datetime);
-  const pkg = state.packages.find(p => p.id === s.packageId);
-  const exercises = s.exercises || [];
-  const intensityMap = buildMuscleIntensity(exercises);
-  const hasMuscles = Object.keys(intensityMap).length > 0;
-  const totalSets = exercises.reduce((sum, e) => sum + (parseInt(e.sets) || 0), 0);
-  const totalReps = exercises.reduce((sum, e) => { const sets = parseInt(e.sets)||0; const reps = parseInt(e.reps)||0; return sum + sets*reps; }, 0);
-  const totalVolume = exercises.reduce((sum, e) => { const sets = parseInt(e.sets)||0; const reps = parseInt(e.reps)||0; const weight = parseFloat(e.weight)||0; return sum + sets*reps*weight; }, 0);
-  const exDetailHTML = exercises.map(ex => {
-    const sets = parseInt(ex.sets) || 0;
-    const reps = parseInt(ex.reps) || 0;
-    const weight = parseFloat(ex.weight) || 0;
-    const dbEntry = EXERCISE_DB.find(e => e.name.toLowerCase() === (ex.name||'').toLowerCase());
-    const musclesLabel = (ex.muscles || dbEntry?.muscles || []).map(m => m.replace(/-/g,' ')).join(', ');
-    let badgeClass = '';
-    if (weight > 60) badgeClass = 'intensity-3';
-    else if (weight > 30) badgeClass = 'intensity-2';
-    const badges = Array.from({length: sets}, () =>
-      `<div class="set-badge ${badgeClass}"><span>${weight ? weight+'kg' : sets+'×'}</span><span class="set-badge-reps">${reps}×</span></div>`
-    ).join('');
-    return `<div class="ex-detail-card">
-      <div class="ex-detail-name">${ex.name}</div>
-      ${musclesLabel ? `<div class="ex-detail-muscles-tag">${musclesLabel}</div>` : ''}
-      <div class="set-badges">${badges}</div>
-    </div>`;
-  }).join('');
-  const muscleSection = hasMuscles ? `
-    <div class="session-muscle-header">
-      <div class="muscle-bodies">
-        ${buildMuscleSVG(intensityMap, 'front')}
-        ${buildMuscleSVG(intensityMap, 'back')}
-      </div>
-      <div class="session-stats-row">
-        <div class="session-stat"><div class="session-stat-val">${totalSets}</div><div class="session-stat-label">Sets</div></div>
-        <div class="session-stat"><div class="session-stat-val">${totalReps}</div><div class="session-stat-label">Reps</div></div>
-        <div class="session-stat"><div class="session-stat-val">${totalVolume > 0 ? Math.round(totalVolume).toLocaleString() : '—'}</div><div class="session-stat-label">Volume kg</div></div>
-      </div>
-    </div>` : '';
-  document.getElementById('view-session-content').innerHTML = `
-    <div class="session-detail-wrap">
-      <div style="font-size:18px;font-weight:600;margin-bottom:4px;">${dt.toLocaleDateString('en',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
-      <div style="font-size:13px;color:var(--gray-600);margin-bottom:${hasMuscles?'16px':'8px'};">${dt.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}${s.duration?' · '+s.duration+' hr':''}${s.location?' · '+s.location:''}</div>
-      ${pkg?`<div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Package: ${pkg.name}</div>`:''}
-      ${s.notes?`<div style="font-size:13px;color:var(--gray-600);margin-bottom:12px;">${s.notes}</div>`:''}
-      ${muscleSection}
-      ${exDetailHTML ? `<div style="margin-top:16px;">${exDetailHTML}</div>` : ''}
-      ${s.completionNotes?`<div style="margin-top:16px;padding:12px;background:var(--gray-100);font-size:13px;font-style:italic;color:var(--gray-600);">"${s.completionNotes}"</div>`:''}
-    </div>`;
-  document.getElementById('view-modal-actions').innerHTML = s.status === 'booked'
-    ? `<button class="btn btn-ghost" onclick="closeModal('view-modal');openCompleteModal('${s.id}')">✓ Complete</button>
-       <button class="btn btn-ghost" onclick="closeModal('view-modal');openEditModal('${s.id}')">Edit</button>
-       <button class="btn btn-ghost" onclick="exportSingleICS('${s.id}')">↓ .ics</button>
-       <button class="btn btn-danger btn-sm" onclick="cancelSession('${s.id}')">Cancel</button>`
-    : `<button class="btn btn-ghost" onclick="closeModal('view-modal');openEditModal('${s.id}')">Edit</button>
-       <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>`;
-  openModal('view-modal');
-};
-
 // ===== PACKAGES =====
 window.openPackageModal = function() {
   document.getElementById('pkg-date').value = new Date().toISOString().split('T')[0];
@@ -784,50 +381,6 @@ window.deletePackage = async function(id) {
   showToast('Package deleted');
 };
 
-// ===== SESSION ACTIONS =====
-window.cancelSession = async function(id) {
-  const s = state.sessions.find(x => x.id === id);
-  if (!s) return;
-  const startsAt = new Date(s.datetime);
-  const hoursUntilStart = (startsAt - new Date()) / 36e5;
-  if (hoursUntilStart >= 0 && hoursUntilStart <= 2) {
-    await fsSet('sessions', id, {...s, status:'cancelled'});
-    closeModal('view-modal');
-    rerenderActive();
-    showToast('Session cancelled');
-  } else {
-    await fsDel('sessions', id);
-    closeModal('view-modal');
-    rerenderActive();
-    showToast('Session deleted');
-  }
-};
-window.deleteSession = async function(id) {
-  if (!confirm('Delete this session permanently?')) return;
-  await fsDel('sessions', id);
-  closeModal('view-modal');
-  rerenderActive();
-  showToast('Session deleted');
-};
-
-// ===== ICS =====
-function buildICS(s) {
-  const dt = new Date(s.datetime);
-  const end = new Date(dt.getTime() + (parseFloat(s.duration)||1.5)*3600000);
-  const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
-  const desc = [s.notes, s.exercises?.map(e=>`${e.name} ${e.sets}x${e.reps} @ ${e.weight}kg`).join('; ')].filter(Boolean).join(' | ');
-  return `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//PT Tracker//EN\r\nBEGIN:VEVENT\r\nUID:${s.id}@pttracker\r\nDTSTAMP:${fmt(new Date())}\r\nDTSTART:${fmt(dt)}\r\nDTEND:${fmt(end)}\r\nSUMMARY:PT Session${s.location?' @ '+s.location:''}\r\n${desc?'DESCRIPTION:'+desc+'\r\n':''}${s.location?'LOCATION:'+s.location+'\r\n':''}END:VEVENT\r\nEND:VCALENDAR`;
-}
-window.exportSingleICS = function(id) {
-  const s = state.sessions.find(x => x.id === id);
-  if (!s) return;
-  const blob = new Blob([buildICS(s)], {type:'text/calendar'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = `pt-session-${new Date(s.datetime).toISOString().split('T')[0]}.ics`; a.click();
-  showToast('.ics downloaded');
-};
-window.exportICS = function() { if (currentEditId) exportSingleICS(currentEditId); };
-
 // ===== MODAL HELPERS =====
 window.openModal = function(id) { document.getElementById(id).classList.add('open'); };
 window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
@@ -843,3 +396,22 @@ window.showToast = function(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.style.display='none', 2800);
 };
+
+// ===== MODULE SETUP =====
+installSessionHandlers({
+  state,
+  fsSet,
+  fsDel,
+  getActivePackage,
+  genId,
+  getExerciseRows,
+  addExerciseRow: window.addExerciseRow,
+  openModal: window.openModal,
+  closeModal: window.closeModal,
+  showToast: window.showToast,
+  rerenderActive,
+  buildMuscleIntensity,
+  buildMuscleSVG
+});
+configureFirebase({ showToast: window.showToast });
+initAuth({ startApp, hideLoading, showAuthError });
