@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PT Sessions</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #0f0f0f; --white: #ffffff; --gray-100: #f5f5f5;
+    --gray-200: #e8e8e8; --gray-400: #aaaaaa; --gray-600: #666666;
+    --red: #c0392b; --green: #1a6644; --radius: 2px;
+  }
+  body { font-family: 'Space Grotesk', sans-serif; background: var(--white); color: var(--black); min-height: 100vh; font-size: 14px; line-height: 1.5; }
+
+  /* LOADING SCREEN */
+  #loading-screen {
+    position: fixed; inset: 0; background: var(--white); z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  }
+  .loading-logo { font-size: 13px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; }
+  .loading-bar { width: 120px; height: 2px; background: var(--gray-200); }
+  .loading-fill { height: 100%; background: var(--black); animation: loadingAnim 1.2s ease-in-out infinite; }
+  @keyframes loadingAnim { 0%{width:0%} 50%{width:100%} 100%{width:0%; margin-left:100%} }
+
+  /* SYNC INDICATOR */
+  #sync-indicator {
+    position: fixed; bottom: 24px; left: 24px; z-index: 500;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gray-400); opacity: 0; transition: opacity 0.3s;
+  }
+  #sync-indicator.visible { opacity: 1; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gray-400); }
+  .sync-dot.syncing { background: #f0a500; animation: pulse 0.8s infinite; }
+  .sync-dot.synced { background: var(--green); }
+  .sync-dot.error { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* PIN SCREEN */
+  #pin-screen {
+    position: fixed; inset: 0; background: var(--white); z-index: 8000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+  }
+  #pin-screen.hidden { display: none; }
+  .pin-logo { font-size: 13px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; }
+  .pin-dots { display: flex; gap: 12px; }
+  .pin-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--gray-400); transition: all 0.15s; }
+  .pin-dot.filled { background: var(--black); border-color: var(--black); }
+  .pin-dot.error { background: var(--red); border-color: var(--red); }
+  .pin-keypad { display: grid; grid-template-columns: repeat(3, 64px); gap: 10px; }
+  .pin-key {
+    height: 64px; font-family: inherit; font-size: 18px; font-weight: 500;
+    background: none; border: 1px solid var(--gray-200); cursor: pointer;
+    border-radius: var(--radius); transition: all 0.1s; color: var(--black);
+  }
+  .pin-key:hover { border-color: var(--black); background: var(--gray-100); }
+  .pin-key:active { background: var(--black); color: var(--white); }
+  .pin-key.delete { font-size: 14px; color: var(--gray-400); }
+  .pin-hint { font-size: 11px; color: var(--gray-400); letter-spacing: 0.08em; height: 16px; }
+
+  nav {
+    border-bottom: 1px solid var(--gray-200); padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 52px; position: sticky; top: 0; background: var(--white); z-index: 100;
+  }
+  .nav-logo { font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .nav-tabs { display: flex; }
+  .nav-tab {
+    padding: 6px 14px; font-size: 12px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; cursor: pointer; color: var(--gray-600);
+    border: none; background: none; transition: color 0.15s; border-bottom: 2px solid transparent;
+  }
+  .nav-tab:hover { color: var(--black); }
+  .nav-tab.active { color: var(--black); border-bottom-color: var(--black); }
+
+  .view { display: none; padding: 32px 24px; max-width: 900px; margin: 0 auto; }
+  .view.active { display: block; }
+
+  .section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gray-400); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+
+  .hero-counter { display: flex; align-items: flex-end; gap: 12px; margin: 32px 0 8px; padding-bottom: 32px; border-bottom: 1px solid var(--gray-200); }
+  .hero-number { font-size: 96px; font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
+  .hero-label { font-size: 13px; color: var(--gray-600); font-weight: 400; padding-bottom: 14px; line-height: 1.4; }
+  .hero-label span { display: block; font-size: 11px; color: var(--gray-400); }
+
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 24px 0 32px; }
+  .stat-box { padding: 16px 0; border-right: 1px solid var(--gray-200); padding-right: 20px; margin-right: 20px; }
+  .stat-box:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+  .stat-value { font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  .session-card {
+    border: 1px solid var(--gray-200); padding: 16px 20px; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; transition: border-color 0.15s;
+  }
+  .session-card:hover { border-color: var(--black); }
+  .session-card.completed { opacity: 0.5; }
+  .session-date-block { min-width: 48px; text-align: center; }
+  .session-day { font-size: 22px; font-weight: 700; line-height: 1; }
+  .session-month { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gray-400); }
+  .session-info { flex: 1; }
+  .session-time { font-size: 13px; font-weight: 500; }
+  .session-notes { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+
+  .badge { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 8px; border-radius: 1px; }
+  .badge-pending { border: 1px solid var(--gray-200); color: var(--gray-600); }
+  .badge-done { background: var(--black); color: var(--white); }
+  .badge-cancelled { border: 1px solid var(--red); color: var(--red); }
+
+  .btn {
+    padding: 9px 18px; font-family: inherit; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; border-radius: var(--radius);
+  }
+  .btn-primary { background: var(--black); color: var(--white); border: 1px solid var(--black); }
+  .btn-primary:hover { background: #333; border-color: #333; }
+  .btn-outline { background: transparent; color: var(--black); border: 1px solid var(--gray-200); }
+  .btn-outline:hover { border-color: var(--black); }
+  .btn-ghost { background: transparent; color: var(--gray-600); border: none; padding: 6px 10px; font-size: 11px; }
+  .btn-ghost:hover { color: var(--black); }
+  .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
+  .btn-danger:hover { background: var(--red); color: white; }
+  .btn-sm { padding: 5px 12px; font-size: 11px; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-600); }
+  input, select, textarea {
+    font-family: inherit; font-size: 13px; padding: 9px 12px;
+    border: 1px solid var(--gray-200); background: var(--white); color: var(--black);
+    outline: none; border-radius: var(--radius); transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--black); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .panel-title { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px; }
+
+  .progress-bar { height: 3px; background: var(--gray-200); margin-top: 8px; }
+  .progress-fill { height: 100%; background: var(--black); transition: width 0.3s ease; }
+
+  .exercise-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  .exercise-table th { text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-400); padding: 8px 6px; border-bottom: 1px solid var(--gray-200); }
+  .exercise-table td { padding: 8px 6px; font-size: 13px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+  .exercise-table input { border: none; padding: 4px 6px; font-size: 13px; width: 100%; border-bottom: 1px solid transparent; }
+  .exercise-table input:focus { border-bottom-color: var(--black); }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 200; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--white); width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; padding: 28px; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--gray-200); }
+  .modal-title { font-size: 14px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  .history-table { width: 100%; border-collapse: collapse; }
+  .history-table th { text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-400); padding: 8px 0; border-bottom: 1px solid var(--gray-200); }
+  .history-table td { padding: 12px 0; font-size: 13px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+  .history-table td:first-child { color: var(--gray-400); font-size: 12px; min-width: 90px; }
+
+  .package-card { border: 1px solid var(--gray-200); padding: 20px; margin-bottom: 16px; position: relative; }
+  .package-card.active-package { border-color: var(--black); }
+  .package-active-tag { position: absolute; top: 12px; right: 12px; font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; background: var(--black); color: var(--white); padding: 3px 7px; }
+  .package-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .package-meta { font-size: 12px; color: var(--gray-400); line-height: 1.8; }
+
+  .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .calendar-month-label { font-size: 14px; font-weight: 600; }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--gray-200); border: 1px solid var(--gray-200); }
+  .calendar-day-header { background: var(--white); text-align: center; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); padding: 8px 0; }
+  .calendar-cell { background: var(--white); min-height: 64px; padding: 6px; cursor: pointer; transition: background 0.1s; }
+  .calendar-cell:hover { background: var(--gray-100); }
+  .calendar-cell.empty { cursor: default; }
+  .calendar-cell.today .cell-num { background: var(--black); color: var(--white); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+  .cell-num { font-size: 12px; font-weight: 500; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+  .cell-dot { width: 5px; height: 5px; border-radius: 50%; margin: 2px auto 0; }
+  .cell-dot.completed-dot { background: var(--gray-400); }
+  .cell-dot.booked-dot { background: var(--black); }
+
+  .empty-state { padding: 48px 24px; text-align: center; color: var(--gray-400); }
+  .empty-state-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--gray-600); }
+  .empty-state-sub { font-size: 12px; }
+
+  .workout-detail { background: var(--gray-100); padding: 12px 16px; margin-top: 8px; font-size: 12px; }
+  .workout-exercise-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--gray-200); align-items: center; }
+  .workout-exercise-row:last-child { border-bottom: none; }
+
+  .ics-notice { font-size: 11px; color: var(--gray-400); margin-top: 6px; }
+
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--black); color: var(--white); padding: 12px 20px; font-size: 12px; font-weight: 500; letter-spacing: 0.05em; z-index: 9999; display: none; animation: fadeInUp 0.2s ease; }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 600px) {
+    nav { padding: 0 16px; }
+    .view { padding: 24px 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .hero-number { font-size: 72px; }
+    .nav-tab { padding: 6px 10px; font-size: 11px; }
+    .session-card { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loading-logo">PT Sessions</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <div style="font-size:11px; color:var(--gray-400); letter-spacing:0.08em;">Connecting...</div>
+</div>
+
+<!-- PIN SCREEN -->
+<div id="pin-screen" class="hidden">
+  <div class="pin-logo">PT Sessions</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+    <div class="pin-dot" id="pd4"></div>
+    <div class="pin-dot" id="pd5"></div>
+    <div class="pin-dot" id="pd6"></div>
+    <div class="pin-dot" id="pd7"></div>
+  </div>
+  <div class="pin-keypad">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key" onclick="pinKey('0')" style="grid-column:2">0</button>
+    <button class="pin-key delete" onclick="pinDelete()">⌫</button>
+  </div>
+  <div class="pin-hint" id="pin-hint"></div>
+</div>
+
+<!-- SYNC INDICATOR -->
+<div id="sync-indicator">
+  <div class="sync-dot" id="sync-dot"></div>
+  <span id="sync-label">Synced</span>
+</div>
+
+<nav>
+  <div class="nav-logo">PT Sessions</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('dashboard')">Overview</button>
+    <button class="nav-tab" onclick="showView('calendar')">Calendar</button>
+    <button class="nav-tab" onclick="showView('log')">Log</button>
+    <button class="nav-tab" onclick="showView('packages')">Packages</button>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="view-dashboard" class="view active">
+  <div class="section-label">Session Balance</div>
+  <div class="hero-counter">
+    <div class="hero-number" id="hero-remaining">—</div>
+    <div class="hero-label">sessions remaining<span id="hero-package-name">No active package</span></div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total Purchased</div></div>
+    <div class="stat-box"><div class="stat-value" id="stat-completed">0</div><div class="stat-label">Completed</div></div>
+    <div class="stat-box"><div class="stat-value" id="stat-upcoming">0</div><div class="stat-label">Upcoming</div></div>
+  </div>
+  <div id="progress-section" style="margin-bottom:32px; display:none;">
+    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--gray-400); margin-bottom:4px;">
+      <span>Package Progress</span><span id="progress-label">0 / 0</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div class="section-label">Upcoming Sessions</div>
+  <div id="upcoming-list"></div>
+  <button class="btn btn-primary" onclick="openBookModal()" style="margin-top:16px;">+ Book Session</button>
+</div>
+
+<!-- CALENDAR -->
+<div id="view-calendar" class="view">
+  <div class="section-label">Monthly View</div>
+  <div class="calendar-header">
+    <button class="btn btn-ghost" onclick="changeMonth(-1)">← Prev</button>
+    <div class="calendar-month-label" id="cal-month-label"></div>
+    <button class="btn btn-ghost" onclick="changeMonth(1)">Next →</button>
+  </div>
+  <div class="calendar-grid" id="calendar-grid"></div>
+  <div style="margin-top:16px; display:flex; gap:16px; font-size:11px; color:var(--gray-400);">
+    <span>● Booked</span><span>● Completed</span>
+  </div>
+</div>
+
+<!-- LOG -->
+<div id="view-log" class="view">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+    <div class="section-label" style="margin:0; border:none; padding:0;">Session History</div>
+    <button class="btn btn-outline btn-sm" onclick="openBookModal()">+ Book New</button>
+  </div>
+  <div id="log-list"></div>
+</div>
+
+<!-- PACKAGES -->
+<div id="view-packages" class="view">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+    <div class="section-label" style="margin:0; border:none; padding:0;">Packages</div>
+    <button class="btn btn-primary btn-sm" onclick="openPackageModal()">+ New Package</button>
+  </div>
+  <div id="packages-list"></div>
+</div>
+
+<!-- BOOK MODAL -->
+<div class="modal-overlay" id="book-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="book-modal-title">Book Session</div>
+      <button class="btn btn-ghost" onclick="closeModal('book-modal')">✕</button>
+    </div>
+    <div class="form-grid" style="margin-bottom:16px;">
+      <div class="form-group"><label>Date</label><input type="date" id="book-date"></div>
+      <div class="form-group"><label>Time</label><input type="time" id="book-time" value="10:00"></div>
+      <div class="form-group">
+        <label>Duration</label>
+        <select id="book-duration">
+          <option value="60">60 min</option><option value="90">90 min</option>
+          <option value="45">45 min</option><option value="120">120 min</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Location</label><input type="text" id="book-location" placeholder="e.g. California Fitness"></div>
+      <div class="form-group form-full"><label>Notes</label><input type="text" id="book-notes" placeholder="e.g. Leg day, focus on squats"></div>
+    </div>
+    <div style="border-top:1px solid var(--gray-200); padding-top:16px;">
+      <div class="panel-title">Exercises (optional)</div>
+      <table class="exercise-table">
+        <thead><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>Weight (kg)</th><th></th></tr></thead>
+        <tbody id="exercise-rows"></tbody>
+      </table>
+      <button class="btn btn-ghost" style="margin-top:8px;" onclick="addExerciseRow()">+ Add Exercise</button>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal('book-modal')">Cancel</button>
+      <button class="btn btn-outline btn-sm" id="export-ics-btn" onclick="exportICS()" style="display:none;">↓ .ics</button>
+      <button class="btn btn-primary" id="book-save-btn" onclick="saveSession()">Save Session</button>
+    </div>
+    <div class="ics-notice" id="ics-notice" style="display:none;">Download .ics to add to Google / Apple / Android Calendar</div>
+  </div>
+</div>
+
+<!-- COMPLETE MODAL -->
+<div class="modal-overlay" id="complete-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Mark Complete</div>
+      <button class="btn btn-ghost" onclick="closeModal('complete-modal')">✕</button>
+    </div>
+    <div id="complete-session-info" style="margin-bottom:20px; font-size:13px; color:var(--gray-600);"></div>
+    <div class="panel-title">Workout Log</div>
+    <table class="exercise-table">
+      <thead><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>Weight (kg)</th><th></th></tr></thead>
+      <tbody id="complete-exercise-rows"></tbody>
+    </table>
+    <button class="btn btn-ghost" style="margin-top:8px;" onclick="addCompleteExerciseRow()">+ Add Exercise</button>
+    <div class="form-group" style="margin-top:16px;">
+      <label>Session Notes</label>
+      <textarea id="complete-notes" placeholder="How did it go? Any PRs, pain points..."></textarea>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal('complete-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmComplete()">Mark as Completed</button>
+    </div>
+  </div>
+</div>
+
+<!-- PACKAGE MODAL -->
+<div class="modal-overlay" id="package-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Package</div>
+      <button class="btn btn-ghost" onclick="closeModal('package-modal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full"><label>Package Name</label><input type="text" id="pkg-name" placeholder="e.g. June 2025 — 20 Sessions"></div>
+      <div class="form-group"><label>Payment Date</label><input type="date" id="pkg-date"></div>
+      <div class="form-group"><label>Sessions Purchased</label><input type="number" id="pkg-sessions" min="1" placeholder="20"></div>
+      <div class="form-group"><label>Total Cost (HKD)</label><input type="number" id="pkg-cost" placeholder="4800"></div>
+      <div class="form-group"><label>PT Name</label><input type="text" id="pkg-pt" placeholder="Trainer name"></div>
+      <div class="form-group form-full"><label>Notes</label><input type="text" id="pkg-notes" placeholder="e.g. 20-session block, valid 6 months"></div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal('package-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePackage()">Save Package</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW SESSION MODAL -->
+<div class="modal-overlay" id="view-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Session Details</div>
+      <button class="btn btn-ghost" onclick="closeModal('view-modal')">✕</button>
+    </div>
+    <div id="view-session-content"></div>
+    <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;" id="view-modal-actions"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import {
+  getFirestore, collection, doc, setDoc, deleteDoc,
+  onSnapshot, query, orderBy
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+// ===== PIN GATE =====
+const CORRECT_PIN = '60727955';
+let pinEntry = '';
+
+function initPin() {
+  const unlocked = sessionStorage.getItem('pt_unlocked');
+  if (unlocked === '1') return; // already unlocked this session
+  document.getElementById('pin-screen').classList.remove('hidden');
+}
+
+window.pinKey = function(digit) {
+  if (pinEntry.length >= 8) return;
+  pinEntry += digit;
+  updatePinDots();
+  if (pinEntry.length === 8) {
+    setTimeout(checkPin, 80);
+  }
+};
+
+window.pinDelete = function() {
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-hint').textContent = '';
+};
+
+function updatePinDots(state) {
+  for (let i = 0; i < 8; i++) {
+    const dot = document.getElementById('pd' + i);
+    dot.className = 'pin-dot';
+    if (state === 'error') dot.classList.add('error');
+    else if (i < pinEntry.length) dot.classList.add('filled');
+  }
+}
+
+function checkPin() {
+  if (pinEntry === CORRECT_PIN) {
+    sessionStorage.setItem('pt_unlocked', '1');
+    document.getElementById('pin-screen').classList.add('hidden');
+  } else {
+    updatePinDots('error');
+    document.getElementById('pin-hint').textContent = 'Incorrect PIN';
+    setTimeout(() => {
+      pinEntry = '';
+      updatePinDots();
+      document.getElementById('pin-hint').textContent = '';
+    }, 900);
+  }
+}
+
+// ===== FIREBASE CONFIG =====
+const firebaseConfig = {
+  apiKey: "AIzaSyD-s7p744xyj8LfS_pPL-KYMTsicBmdbAM",
+  authDomain: "getfit-73277.firebaseapp.com",
+  projectId: "getfit-73277",
+  storageBucket: "getfit-73277.firebasestorage.app",
+  messagingSenderId: "703281196969",
+  appId: "1:703281196969:web:c64192870978e2f7035eb8",
+  measurementId: "G-BY3DVLTC03"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ===== STATE =====
+let state = {
+  packages: [],
+  sessions: [],
+  calendarYear: new Date().getFullYear(),
+  calendarMonth: new Date().getMonth(),
+  completingSessionId: null
+};
+let currentEditId = null;
+
+// ===== SYNC UI =====
+function setSyncStatus(status) {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  const ind = document.getElementById('sync-indicator');
+  dot.className = 'sync-dot ' + status;
+  label.textContent = { syncing: 'Saving...', synced: 'Synced', error: 'Offline' }[status] || '';
+  ind.classList.add('visible');
+  if (status === 'synced') {
+    setTimeout(() => ind.classList.remove('visible'), 2000);
+  }
+}
+
+// ===== FIRESTORE HELPERS =====
+async function fsSet(collName, id, data) {
+  setSyncStatus('syncing');
+  try {
+    await setDoc(doc(db, collName, id), data);
+    setSyncStatus('synced');
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('Save failed — check connection');
+    throw e;
+  }
+}
+
+async function fsDel(collName, id) {
+  setSyncStatus('syncing');
+  try {
+    await deleteDoc(doc(db, collName, id));
+    setSyncStatus('synced');
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('Delete failed — check connection');
+    throw e;
+  }
+}
+
+// ===== REALTIME LISTENERS =====
+function startListeners() {
+  // Sessions listener
+  onSnapshot(collection(db, 'sessions'), snap => {
+    state.sessions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    rerenderActive();
+  });
+
+  // Packages listener
+  onSnapshot(collection(db, 'packages'), snap => {
+    state.packages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    rerenderActive();
+  });
+}
+
+function rerenderActive() {
+  const active = document.querySelector('.view.active');
+  if (!active) return;
+  const id = active.id;
+  if (id === 'view-dashboard') renderDashboard();
+  if (id === 'view-calendar') renderCalendar();
+  if (id === 'view-log') renderLog();
+  if (id === 'view-packages') renderPackages();
+}
+
+// ===== INIT =====
+function hideLoading() {
+  document.getElementById('loading-screen').style.display = 'none';
+}
+
+// Wait for first snapshot before hiding loader
+let packagesLoaded = false, sessionsLoaded = false;
+function checkLoaded() {
+  if (packagesLoaded && sessionsLoaded) {
+    hideLoading();
+    renderDashboard();
+  }
+}
+
+onSnapshot(collection(db, 'sessions'), snap => {
+  state.sessions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  sessionsLoaded = true;
+  checkLoaded();
+  rerenderActive();
+});
+
+onSnapshot(collection(db, 'packages'), snap => {
+  state.packages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  packagesLoaded = true;
+  checkLoaded();
+  rerenderActive();
+});
+
+// Safety timeout — show app even if Firebase is slow
+setTimeout(hideLoading, 4000);
+
+// Show PIN gate
+initPin();
+
+// ===== UTILS =====
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function getActivePackage() {
+  return state.packages.find(p => p.active) || state.packages[state.packages.length - 1] || null;
+}
+
+function getPackageStats(pkg) {
+  if (!pkg) return { total: 0, completed: 0, remaining: 0 };
+  const completed = state.sessions.filter(s => s.packageId === pkg.id && s.status === 'completed').length;
+  return { total: pkg.sessions, completed, remaining: Math.max(0, pkg.sessions - completed) };
+}
+
+// ===== VIEWS =====
+window.showView = function(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  ['dashboard','calendar','log','packages'].forEach((t, i) => {
+    if (t === name) document.querySelectorAll('.nav-tab')[i].classList.add('active');
+  });
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'calendar') renderCalendar();
+  if (name === 'log') renderLog();
+  if (name === 'packages') renderPackages();
+};
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const pkg = getActivePackage();
+  const stats = getPackageStats(pkg);
+  document.getElementById('hero-remaining').textContent = pkg ? stats.remaining : '—';
+  document.getElementById('hero-package-name').textContent = pkg ? pkg.name : 'No active package';
+  document.getElementById('stat-total').textContent = stats.total;
+  document.getElementById('stat-completed').textContent = stats.completed;
+  document.getElementById('stat-upcoming').textContent = state.sessions.filter(s => s.status === 'booked').length;
+
+  const progressSection = document.getElementById('progress-section');
+  if (pkg && stats.total > 0) {
+    progressSection.style.display = 'block';
+    const pct = Math.round((stats.completed / stats.total) * 100);
+    document.getElementById('progress-label').textContent = `${stats.completed} / ${stats.total}`;
+    document.getElementById('progress-fill').style.width = pct + '%';
+  } else {
+    progressSection.style.display = 'none';
+  }
+
+  const now = new Date();
+  const upcoming = state.sessions
+    .filter(s => s.status === 'booked' && new Date(s.datetime) >= now)
+    .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))
+    .slice(0, 5);
+
+  const upcomingList = document.getElementById('upcoming-list');
+  upcomingList.innerHTML = upcoming.length === 0
+    ? `<div class="empty-state"><div class="empty-state-title">No upcoming sessions</div><div class="empty-state-sub">Book your next session to get started</div></div>`
+    : upcoming.map(sessionCardHTML).join('');
+}
+
+function sessionCardHTML(s) {
+  const dt = new Date(s.datetime);
+  const day = dt.getDate();
+  const month = dt.toLocaleString('en', { month: 'short' }).toUpperCase();
+  const time = dt.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
+  const dur = s.duration ? ` · ${s.duration} min` : '';
+  const loc = s.location ? ` · ${s.location}` : '';
+  const notes = s.notes || (s.exercises?.length ? `${s.exercises.length} exercise${s.exercises.length > 1 ? 's' : ''} logged` : '');
+
+  const badge = { booked: '<span class="badge badge-pending">Upcoming</span>', completed: '<span class="badge badge-done">Done</span>', cancelled: '<span class="badge badge-cancelled">Cancelled</span>' }[s.status] || '';
+
+  const actions = s.status === 'booked'
+    ? `<button class="btn btn-ghost btn-sm" onclick="openCompleteModal('${s.id}')">✓ Complete</button>
+       <button class="btn btn-ghost btn-sm" onclick="openEditModal('${s.id}')">Edit</button>
+       <button class="btn btn-ghost btn-sm" onclick="exportSingleICS('${s.id}')">↓ .ics</button>`
+    : `<button class="btn btn-ghost btn-sm" onclick="openViewModal('${s.id}')">View</button>`;
+
+  return `<div class="session-card ${s.status === 'completed' ? 'completed' : ''}">
+    <div class="session-date-block"><div class="session-day">${day}</div><div class="session-month">${month}</div></div>
+    <div class="session-info">
+      <div class="session-time">${time}${dur}${loc}</div>
+      ${notes ? `<div class="session-notes">${notes}</div>` : ''}
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">${badge}${actions}</div>
+  </div>`;
+}
+
+// ===== CALENDAR =====
+function renderCalendar() {
+  const { calendarYear: year, calendarMonth: month } = state;
+  document.getElementById('cal-month-label').textContent = new Date(year, month, 1).toLocaleString('en', { month: 'long', year: 'numeric' });
+  const today = new Date();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  let html = ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => `<div class="calendar-day-header">${d}</div>`).join('');
+  for (let i = 0; i < firstDay; i++) html += `<div class="calendar-cell empty"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = today.getFullYear()===year && today.getMonth()===month && today.getDate()===d;
+    const daySessions = state.sessions.filter(s => s.datetime?.startsWith(dateStr));
+    const dots = daySessions.map(s => `<div class="cell-dot ${s.status==='completed'?'completed-dot':'booked-dot'}"></div>`).join('');
+    html += `<div class="calendar-cell ${isToday?'today':''}" onclick="calCellClick('${dateStr}')">
+      <div class="cell-num">${d}</div>${dots}</div>`;
+  }
+  document.getElementById('calendar-grid').innerHTML = html;
+}
+
+window.changeMonth = function(dir) {
+  state.calendarMonth += dir;
+  if (state.calendarMonth < 0) { state.calendarMonth = 11; state.calendarYear--; }
+  if (state.calendarMonth > 11) { state.calendarMonth = 0; state.calendarYear++; }
+  renderCalendar();
+};
+
+window.calCellClick = function(dateStr) {
+  const daySessions = state.sessions.filter(s => s.datetime?.startsWith(dateStr));
+  if (daySessions.length > 0) openViewModal(daySessions[0].id);
+  else { document.getElementById('book-date').value = dateStr; openBookModal(); }
+};
+
+// ===== LOG =====
+function renderLog() {
+  const sorted = [...state.sessions].sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
+  if (!sorted.length) {
+    document.getElementById('log-list').innerHTML = `<div class="empty-state"><div class="empty-state-title">No sessions yet</div></div>`;
+    return;
+  }
+  document.getElementById('log-list').innerHTML = sorted.map(s => {
+    let exHtml = '';
+    if (s.exercises?.length) {
+      exHtml = `<div class="workout-detail">
+        <div class="workout-exercise-row" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-400);">
+          <span>Exercise</span><span>Sets</span><span>Reps</span><span>Weight</span>
+        </div>
+        ${s.exercises.map(e => `<div class="workout-exercise-row"><span>${e.name||'—'}</span><span>${e.sets||'—'}</span><span>${e.reps||'—'}</span><span>${e.weight?e.weight+' kg':'—'}</span></div>`).join('')}
+      </div>`;
+    }
+    const notesHtml = s.completionNotes ? `<div style="margin-top:8px;font-size:12px;color:var(--gray-600);font-style:italic;">"${s.completionNotes}"</div>` : '';
+    return `<div style="margin-bottom:8px;">${sessionCardHTML(s)}${exHtml}${notesHtml}</div>`;
+  }).join('');
+}
+
+// ===== PACKAGES =====
+function renderPackages() {
+  if (!state.packages.length) {
+    document.getElementById('packages-list').innerHTML = `<div class="empty-state"><div class="empty-state-title">No packages yet</div><div class="empty-state-sub">Add your first session package</div></div>`;
+    return;
+  }
+  document.getElementById('packages-list').innerHTML = [...state.packages].reverse().map(pkg => {
+    const stats = getPackageStats(pkg);
+    const costPer = pkg.cost && pkg.sessions ? Math.round(pkg.cost/pkg.sessions) : null;
+    const dateStr = new Date(pkg.date).toLocaleDateString('en', { day:'numeric', month:'short', year:'numeric' });
+    const pct = stats.total > 0 ? Math.round(stats.completed/stats.total*100) : 0;
+    return `<div class="package-card ${pkg.active?'active-package':''}">
+      ${pkg.active ? '<div class="package-active-tag">Active</div>' : ''}
+      <div class="package-name">${pkg.name}</div>
+      <div class="package-meta">
+        Purchased: ${dateStr}<br>
+        Sessions: ${stats.completed} completed / ${stats.total} total<br>
+        ${pkg.cost ? `Cost: HKD ${Number(pkg.cost).toLocaleString()}${costPer ? ` (HKD ${costPer}/session)` : ''}` : ''}
+        ${pkg.pt ? `<br>Trainer: ${pkg.pt}` : ''}
+        ${pkg.notes ? `<br>${pkg.notes}` : ''}
+      </div>
+      <div style="margin-top:12px;">
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);margin-top:4px;"><span>${stats.remaining} remaining</span><span>${pct}%</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        ${!pkg.active ? `<button class="btn btn-outline btn-sm" onclick="setActivePackage('${pkg.id}')">Set Active</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="deletePackage('${pkg.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== BOOK SESSION =====
+window.openBookModal = function() {
+  currentEditId = null;
+  document.getElementById('book-modal-title').textContent = 'Book Session';
+  document.getElementById('book-save-btn').textContent = 'Save Session';
+  document.getElementById('export-ics-btn').style.display = 'none';
+  document.getElementById('ics-notice').style.display = 'none';
+  if (!document.getElementById('book-date').value)
+    document.getElementById('book-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('exercise-rows').innerHTML = '';
+  addExerciseRow();
+  openModal('book-modal');
+};
+
+window.openEditModal = function(id) {
+  const s = state.sessions.find(x => x.id === id);
+  if (!s) return;
+  currentEditId = id;
+  document.getElementById('book-modal-title').textContent = 'Edit Session';
+  document.getElementById('book-save-btn').textContent = 'Update Session';
+  document.getElementById('export-ics-btn').style.display = 'inline-flex';
+  document.getElementById('ics-notice').style.display = 'block';
+  const dt = new Date(s.datetime);
+  document.getElementById('book-date').value = dt.toISOString().split('T')[0];
+  document.getElementById('book-time').value = dt.toTimeString().slice(0,5);
+  document.getElementById('book-duration').value = s.duration || '60';
+  document.getElementById('book-location').value = s.location || '';
+  document.getElementById('book-notes').value = s.notes || '';
+  document.getElementById('exercise-rows').innerHTML = '';
+  (s.exercises?.length ? s.exercises : [null]).forEach(e => addExerciseRow(e));
+  openModal('book-modal');
+};
+
+window.addExerciseRow = function(data) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="e.g. Hip Thrust" value="${data?.name||''}"></td>
+    <td><input type="number" min="1" placeholder="4" value="${data?.sets||''}"></td>
+    <td><input type="text" placeholder="8–12" value="${data?.reps||''}"></td>
+    <td><input type="number" step="0.5" placeholder="kg" value="${data?.weight||''}"></td>
+    <td><button class="btn btn-ghost" style="padding:2px 6px;font-size:16px;" onclick="this.closest('tr').remove()">×</button></td>`;
+  document.getElementById('exercise-rows').appendChild(tr);
+};
+
+function getExerciseRows(tbodyId) {
+  return [...document.querySelectorAll(`#${tbodyId} tr`)].reduce((acc, r) => {
+    const inputs = r.querySelectorAll('input');
+    if (inputs[0]?.value.trim()) acc.push({ name: inputs[0].value.trim(), sets: inputs[1].value.trim(), reps: inputs[2].value.trim(), weight: inputs[3].value.trim() });
+    return acc;
+  }, []);
+}
+
+window.saveSession = async function() {
+  const date = document.getElementById('book-date').value;
+  const time = document.getElementById('book-time').value;
+  if (!date) { showToast('Please select a date'); return; }
+  const datetime = `${date}T${time||'10:00'}`;
+  const pkg = getActivePackage();
+  const id = currentEditId || genId();
+  const existing = currentEditId ? state.sessions.find(x => x.id === currentEditId) : null;
+
+  const sessionData = {
+    datetime,
+    duration: document.getElementById('book-duration').value,
+    location: document.getElementById('book-location').value,
+    notes: document.getElementById('book-notes').value,
+    exercises: getExerciseRows('exercise-rows'),
+    status: existing?.status || 'booked',
+    packageId: existing?.packageId || (pkg ? pkg.id : null),
+    completionNotes: existing?.completionNotes || null,
+    completedAt: existing?.completedAt || null,
+  };
+
+  await fsSet('sessions', id, sessionData);
+  closeModal('book-modal');
+  showToast(currentEditId ? 'Session updated' : 'Session booked');
+};
+
+// ===== COMPLETE =====
+window.openCompleteModal = function(id) {
+  state.completingSessionId = id;
+  const s = state.sessions.find(x => x.id === id);
+  if (!s) return;
+  const dt = new Date(s.datetime);
+  document.getElementById('complete-session-info').textContent =
+    dt.toLocaleDateString('en', { weekday:'long', day:'numeric', month:'long' }) + ' at ' +
+    dt.toLocaleTimeString('en', { hour:'2-digit', minute:'2-digit' });
+  document.getElementById('complete-exercise-rows').innerHTML = '';
+  (s.exercises?.length ? s.exercises : [null]).forEach(e => addCompleteExerciseRow(e));
+  document.getElementById('complete-notes').value = s.completionNotes || '';
+  openModal('complete-modal');
+};
+
+window.addCompleteExerciseRow = function(data) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="e.g. Hip Thrust" value="${data?.name||''}"></td>
+    <td><input type="number" min="1" placeholder="4" value="${data?.sets||''}"></td>
+    <td><input type="text" placeholder="8–12" value="${data?.reps||''}"></td>
+    <td><input type="number" step="0.5" placeholder="kg" value="${data?.weight||''}"></td>
+    <td><button class="btn btn-ghost" style="padding:2px 6px;font-size:16px;" onclick="this.closest('tr').remove()">×</button></td>`;
+  document.getElementById('complete-exercise-rows').appendChild(tr);
+};
+
+window.confirmComplete = async function() {
+  const s = state.sessions.find(x => x.id === state.completingSessionId);
+  if (!s) return;
+  await fsSet('sessions', s.id, { ...s, status: 'completed', exercises: getExerciseRows('complete-exercise-rows'), completionNotes: document.getElementById('complete-notes').value, completedAt: new Date().toISOString() });
+  closeModal('complete-modal');
+  showToast('Session completed ✓');
+};
+
+// ===== VIEW SESSION =====
+window.openViewModal = function(id) {
+  const s = state.sessions.find(x => x.id === id);
+  if (!s) return;
+  const dt = new Date(s.datetime);
+  const pkg = state.packages.find(p => p.id === s.packageId);
+  const exHtml = s.exercises?.length ? `<div style="margin-top:16px;">
+    <div class="section-label" style="margin-bottom:12px;">Exercises</div>
+    <table class="history-table"><thead><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>Weight</th></tr></thead>
+    <tbody>${s.exercises.map(e => `<tr><td style="color:var(--black);min-width:unset;">${e.name}</td><td>${e.sets||'—'}</td><td>${e.reps||'—'}</td><td>${e.weight?e.weight+' kg':'—'}</td></tr>`).join('')}</tbody></table></div>` : '';
+
+  document.getElementById('view-session-content').innerHTML = `
+    <div style="font-size:18px;font-weight:600;margin-bottom:4px;">${dt.toLocaleDateString('en',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+    <div style="font-size:13px;color:var(--gray-600);margin-bottom:16px;">${dt.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}${s.duration?' · '+s.duration+' min':''}${s.location?' · '+s.location:''}</div>
+    ${pkg?`<div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Package: ${pkg.name}</div>`:''}
+    ${s.notes?`<div style="font-size:13px;color:var(--gray-600);margin-bottom:12px;">${s.notes}</div>`:''}
+    ${exHtml}
+    ${s.completionNotes?`<div style="margin-top:16px;padding:12px;background:var(--gray-100);font-size:13px;font-style:italic;color:var(--gray-600);">"${s.completionNotes}"</div>`:''}`;
+
+  document.getElementById('view-modal-actions').innerHTML = s.status === 'booked'
+    ? `<button class="btn btn-ghost" onclick="closeModal('view-modal');openCompleteModal('${s.id}')">✓ Complete</button>
+       <button class="btn btn-ghost" onclick="closeModal('view-modal');openEditModal('${s.id}')">Edit</button>
+       <button class="btn btn-ghost" onclick="exportSingleICS('${s.id}')">↓ .ics</button>
+       <button class="btn btn-danger btn-sm" onclick="cancelSession('${s.id}')">Cancel</button>`
+    : `<button class="btn btn-ghost" onclick="closeModal('view-modal');openEditModal('${s.id}')">Edit</button>
+       <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>`;
+
+  openModal('view-modal');
+};
+
+// ===== PACKAGES =====
+window.openPackageModal = function() {
+  document.getElementById('pkg-date').value = new Date().toISOString().split('T')[0];
+  openModal('package-modal');
+};
+
+window.savePackage = async function() {
+  const name = document.getElementById('pkg-name').value.trim();
+  const sessions = parseInt(document.getElementById('pkg-sessions').value);
+  const date = document.getElementById('pkg-date').value;
+  if (!name || !sessions || !date) { showToast('Please fill in name, date, and sessions'); return; }
+
+  // Deactivate all others
+  await Promise.all(state.packages.filter(p => p.active).map(p => fsSet('packages', p.id, {...p, active:false})));
+
+  const id = genId();
+  await fsSet('packages', id, { name, date, sessions, cost: document.getElementById('pkg-cost').value||null, pt: document.getElementById('pkg-pt').value||null, notes: document.getElementById('pkg-notes').value||null, active: true });
+  closeModal('package-modal');
+  showToast('Package saved & set as active');
+  ['pkg-name','pkg-sessions','pkg-cost','pkg-pt','pkg-notes'].forEach(i => document.getElementById(i).value='');
+};
+
+window.setActivePackage = async function(id) {
+  await Promise.all(state.packages.map(p => fsSet('packages', p.id, {...p, active: p.id===id})));
+  showToast('Active package updated');
+};
+
+window.deletePackage = async function(id) {
+  if (!confirm('Delete this package?')) return;
+  await fsDel('packages', id);
+  showToast('Package deleted');
+};
+
+// ===== SESSION ACTIONS =====
+window.cancelSession = async function(id) {
+  const s = state.sessions.find(x => x.id === id);
+  if (!s) return;
+  await fsSet('sessions', id, {...s, status:'cancelled'});
+  closeModal('view-modal');
+  showToast('Session cancelled');
+};
+
+window.deleteSession = async function(id) {
+  if (!confirm('Delete this session permanently?')) return;
+  await fsDel('sessions', id);
+  closeModal('view-modal');
+  showToast('Session deleted');
+};
+
+// ===== ICS =====
+function buildICS(s) {
+  const dt = new Date(s.datetime);
+  const end = new Date(dt.getTime() + (parseInt(s.duration)||60)*60000);
+  const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const desc = [s.notes, s.exercises?.map(e=>`${e.name} ${e.sets}x${e.reps} @ ${e.weight}kg`).join('; ')].filter(Boolean).join(' | ');
+  return `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//PT Tracker//EN\r\nBEGIN:VEVENT\r\nUID:${s.id}@pttracker\r\nDTSTAMP:${fmt(new Date())}\r\nDTSTART:${fmt(dt)}\r\nDTEND:${fmt(end)}\r\nSUMMARY:PT Session${s.location?' @ '+s.location:''}\r\n${desc?'DESCRIPTION:'+desc+'\r\n':''}${s.location?'LOCATION:'+s.location+'\r\n':''}END:VEVENT\r\nEND:VCALENDAR`;
+}
+
+window.exportSingleICS = function(id) {
+  const s = state.sessions.find(x => x.id === id);
+  if (!s) return;
+  const blob = new Blob([buildICS(s)], {type:'text/calendar'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `pt-session-${new Date(s.datetime).toISOString().split('T')[0]}.ics`;
+  a.click();
+  showToast('.ics downloaded — open to add to calendar');
+};
+
+window.exportICS = function() { if (currentEditId) exportSingleICS(currentEditId); };
+
+// ===== MODAL HELPERS =====
+window.openModal = function(id) { document.getElementById(id).classList.add('open'); };
+window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); });
+});
+
+// ===== TOAST =====
+let toastTimer;
+window.showToast = function(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.style.display='none', 2800);
+};
+</script>
+</body>
+</html>
