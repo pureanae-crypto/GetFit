@@ -229,7 +229,7 @@
   .bottom-sheet-overlay.open { display: flex; }
   .bottom-sheet {
     background: var(--white); width: 100%; max-width: 640px;
-    border-radius: 16px 16px 0 0; max-height: 85vh;
+    border-radius: 16px 16px 0 0; height: 85vh;
     display: flex; flex-direction: column; overflow: hidden;
     animation: slideUp 0.25s ease;
   }
