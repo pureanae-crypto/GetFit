@@ -70,7 +70,7 @@
   <div class="stats-row">
     <div class="stat-box"><div class="stat-value" id="stat-completed">0</div><div class="stat-label">Completed</div></div>
     <div class="stat-box"><div class="stat-value" id="stat-upcoming">0</div><div class="stat-label">Upcoming</div></div>
-    <div class="stat-box"><div class="stat-value" id="stat-available">0</div><div class="stat-label">Available</div></div>
+    <div class="stat-box"><div class="stat-value" id="stat-available">0</div><div class="stat-label">Available Balance</div></div>
   </div>
   <div id="progress-section" style="margin-bottom:32px; display:none;">
     <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--gray-400); margin-bottom:4px;">
@@ -95,12 +95,14 @@
   <div class="section-label">Monthly View</div>
   <div class="calendar-header">
     <button class="btn btn-ghost" onclick="changeMonth(-1)">← Prev</button>
-    <div class="calendar-month-label" id="cal-month-label"></div>
+    <button class="calendar-month-label" id="cal-month-label" onclick="openCalendarJump()"></button>
     <button class="btn btn-ghost" onclick="changeMonth(1)">Next →</button>
   </div>
   <div class="calendar-grid" id="calendar-grid"></div>
-  <div style="margin-top:16px; display:flex; gap:16px; font-size:11px; color:var(--gray-400);">
-    <span>● Booked</span><span>● Completed</span>
+  <div class="calendar-legend">
+    <span><span class="legend-dot booked-dot"></span>Booked</span>
+    <span><span class="legend-dot completed-dot"></span>Completed</span>
+    <span><span class="legend-dot cancelled-dot"></span>Cancelled</span>
   </div>
 </div>
 
@@ -203,6 +205,40 @@
     <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;">
       <button class="btn btn-ghost" onclick="closeModal('package-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="savePackage()">Save Package</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR JUMP MODAL -->
+<div class="modal-overlay" id="calendar-jump-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title">Jump to Month</div>
+      <button class="btn btn-ghost" onclick="closeModal('calendar-jump-modal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Month</label>
+        <select id="jump-month">
+          <option value="0">January</option>
+          <option value="1">February</option>
+          <option value="2">March</option>
+          <option value="3">April</option>
+          <option value="4">May</option>
+          <option value="5">June</option>
+          <option value="6">July</option>
+          <option value="7">August</option>
+          <option value="8">September</option>
+          <option value="9">October</option>
+          <option value="10">November</option>
+          <option value="11">December</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Year</label><input type="number" id="jump-year" min="2020" max="2100" step="1"></div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal('calendar-jump-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="applyCalendarJump()">Go</button>
     </div>
   </div>
 </div>
