@@ -288,6 +288,26 @@
   }
   .add-exercise-btn:hover { color: var(--black); }
 
+  .cx-block { border: 1px solid var(--gray-200); padding: 14px 16px; margin-bottom: 10px; }
+  .cx-block-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .cx-name { flex: 1; background: none; border: none; border-bottom: 1px solid var(--gray-200); font-family: inherit; font-size: 13px; font-weight: 600; color: var(--black); padding: 2px 0 5px; outline: none; }
+  .cx-name:focus { border-bottom-color: var(--black); }
+  .cx-remove-ex { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gray-400); padding: 0; white-space: nowrap; flex-shrink: 0; }
+  .cx-remove-ex:hover { color: var(--red); }
+  .cx-col-headers { display: grid; grid-template-columns: 28px 1fr 1fr 24px; gap: 6px; font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-400); padding: 0 0 4px; }
+  .cx-set-row { display: grid; grid-template-columns: 28px 1fr 1fr 24px; gap: 6px; align-items: center; margin-bottom: 4px; }
+  .cx-set-num { font-size: 11px; font-weight: 600; color: var(--gray-400); text-align: center; }
+  .cx-set-row .ex-row-input { width: 100%; text-align: center; border: none; border-bottom: 1px solid var(--gray-200); border-radius: 0; padding: 5px 2px; }
+  .cx-set-row .ex-row-input:focus { border-bottom-color: var(--black); }
+  .cx-add-set-btn { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-400); padding: 6px 0 2px; }
+  .cx-add-set-btn:hover { color: var(--black); }
+  .cx-adjust-row { display: flex; align-items: center; gap: 6px; margin-top: 14px; opacity: 0.3; pointer-events: none; transition: opacity 0.15s; }
+  .cx-adjust-row.active { opacity: 1; pointer-events: auto; }
+  .cx-adjust-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-400); flex: 1; }
+  .cx-adjust-btn { background: none; border: 1px solid var(--gray-200); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; padding: 4px 8px; color: var(--gray-600); }
+  .cx-adjust-btn:hover { border-color: var(--black); color: var(--black); }
+  .cx-volume { font-size: 12px; color: var(--gray-400); margin-top: 14px; }
+
   /* SESSION VIEW - MUSCLE HIGHLIGHTER */
   .session-detail-wrap { padding: 0; }
   .session-muscle-header { background: #111; color: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; overflow: hidden; }
