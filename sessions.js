@@ -25,20 +25,20 @@ export function sessionCardHTML(s, options = {}) {
   const dur = s.duration ? ` · ${s.duration} hr` : '';
   const loc = s.location ? ` · ${s.location}` : '';
   const notes = s.notes || (s.exercises?.length ? `${s.exercises.length} exercise${s.exercises.length > 1 ? 's' : ''} logged` : '');
-  const badge = { booked: '<span class="badge badge-pending">Upcoming</span>', completed: '<span class="badge badge-done">Done</span>', cancelled: '<span class="badge badge-cancelled">Cancelled</span>' }[s.status] || '';
+  const dot = { booked: '<span style="color:#22c55e;font-size:10px;line-height:1;">●</span>', completed: '<span style="color:#9ca3af;font-size:10px;line-height:1;">●</span>', cancelled: '<span style="color:#ef4444;font-size:10px;line-height:1;">●</span>' }[s.status] || '';
   const actions = s.status === 'booked'
     ? `<button class="btn btn-ghost btn-sm" onclick="openCompleteModal('${s.id}')">✓ Complete</button>
        <button class="btn btn-ghost btn-sm" onclick="openEditModal('${s.id}')">Edit</button>
-       <button class="btn btn-ghost btn-sm" onclick="exportSingleICS('${s.id}')">↓ .ics</button>
+       <button class="btn btn-ghost btn-sm" onclick="exportSingleICS('${s.id}')">+ Calendar</button>
        ${options.showDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>` : ''}`
     : `<button class="btn btn-ghost btn-sm" onclick="openViewModal('${s.id}')">View</button>`;
   return `<div class="session-card ${s.status === 'completed' ? 'completed' : ''}">
-    <div class="session-date-block"><div class="session-day">${day}</div><div class="session-month">${month}</div></div>
+    <div class="session-date-block"><div style="display:flex;align-items:center;gap:4px;">${dot}<div class="session-day">${day}</div></div><div class="session-month">${month}</div></div>
     <div class="session-info">
       <div class="session-time">${time}${dur}${loc}</div>
       ${notes ? `<div class="session-notes">${notes}</div>` : ''}
     </div>
-    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">${badge}${actions}</div>
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">${actions}</div>
   </div>`;
 }
 
