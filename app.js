@@ -146,7 +146,7 @@ window.showView = function(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  ['dashboard','calendar','log','packages'].forEach((t, i) => {
+  ['dashboard','calendar','log'].forEach((t, i) => {
     if (t === name) document.querySelectorAll('.nav-tab')[i].classList.add('active');
   });
   if (name === 'dashboard') renderDashboard();
@@ -172,9 +172,9 @@ function renderCalendar() {
   const { calendarYear: year, calendarMonth: month } = state;
   document.getElementById('cal-month-label').textContent = new Date(year, month, 1).toLocaleString('en', { month: 'long', year: 'numeric' });
   const today = new Date();
-  const firstDay = new Date(year, month, 1).getDay();
+  const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  let html = ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => `<div class="calendar-day-header">${d}</div>`).join('');
+  let html = ['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d => `<div class="calendar-day-header">${d}</div>`).join('');
   for (let i = 0; i < firstDay; i++) html += `<div class="calendar-cell empty"></div>`;
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
