@@ -130,7 +130,7 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 function getActivePackage() { return state.packages.find(p => p.active) || state.packages[state.packages.length - 1] || null; }
 function formatHours(value) { return (Math.round((value || 0) * 10) / 10).toFixed(1); }
 function formatStatHours(value) { return `${formatHours(value)}<span class="stat-unit">hrs</span>`; }
-function formatToday() { return new Date().toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' }); }
+function formatToday(monthStyle = 'long') { return new Date().toLocaleDateString('en', { month: monthStyle, day: 'numeric', year: 'numeric' }); }
 function getPackageStats(pkg) {
   if (!pkg) return { total: 0, completed: 0, remaining: 0 };
   const completedHrs = state.sessions
