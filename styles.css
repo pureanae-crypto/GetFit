@@ -233,7 +233,7 @@
     border-radius: 16px;
     display: flex; flex-direction: column; overflow: hidden;
     z-index: 1001;
-    animation: slideUp 0.25s ease;
+    animation: slideUp 0.25s ease forwards;
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   .bottom-sheet-handle { width: 36px; height: 4px; background: var(--gray-200); border-radius: 2px; margin: 12px auto 0; }
