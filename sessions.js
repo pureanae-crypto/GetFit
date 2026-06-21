@@ -53,15 +53,21 @@ export function renderLog(ctx) {
   document.getElementById('log-list').innerHTML = sorted.map(s => {
     let exHtml = '';
     if (s.exercises?.length) {
+      const rows = s.exercises.map(e => {
+        if (Array.isArray(e.sets) && e.sets.length) {
+          return e.sets.map((set, i) =>
+            `<div class="workout-exercise-row"><span>${i === 0 ? (e.name || '—') : ''}</span><span>${i + 1}</span><span>${set.weight ?? '—'} kg</span><span>${set.reps ?? '—'} reps</span></div>`
+          ).join('');
+        }
+        return `<div class="workout-exercise-row"><span>${e.name||'—'}</span><span>${e.sets||'—'}</span><span>${e.weight?e.weight+' kg':'—'}</span><span>${e.reps||'—'} reps</span></div>`;
+      }).join('');
       exHtml = `<div class="workout-detail">
         <div class="workout-exercise-row" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-400);">
-          <span>Exercise</span><span>Sets</span><span>Reps</span><span>Weight</span>
-        </div>
-        ${s.exercises.map(e => `<div class="workout-exercise-row"><span>${e.name||'—'}</span><span>${e.sets||'—'}</span><span>${e.reps||'—'}</span><span>${e.weight?e.weight+' kg':'—'}</span></div>`).join('')}
-      </div>`;
+          <span>Exercise</span><span>Set</span><span>Weight</span><span>Reps</span>
+        </div>${rows}</div>`;
     }
     const notesHtml = s.completionNotes ? `<div style="margin-top:8px;font-size:12px;color:var(--gray-600);font-style:italic;">"${s.completionNotes}"</div>` : '';
-    return `<div style="margin-bottom:8px;">${sessionCardHTML(s)}${exHtml}${notesHtml}</div>`;
+    return `<div style="margin-bottom:8px;">${sessionCardHTML(s, { showDelete: true })}${exHtml}${notesHtml}</div>`;
   }).join('');
 }
 
