@@ -2,9 +2,12 @@ import { EXERCISE_DB } from "./exercises.js";
 
 let ctx = null;
 let currentEditId = null;
+let sessionEntryMode = 'book';
 let logTrendMode = 'weekly';
 let logBodyFilter = 'All';
+let logTypeFilter = 'All';
 const LOG_BODY_FILTERS = ['All', 'Back', 'Core', 'Shoulders', 'Legs / Glutes', 'Chest', 'Arms'];
+const LOG_TYPE_FILTERS = ['All', 'PT Only', 'Personal Only'];
 const BODY_PART_SLUGS = {
   Back: ['lats', 'rhomboids', 'traps', 'lower-back', 'rear-deltoids'],
   Core: ['abs', 'obliques'],
@@ -17,8 +20,11 @@ const BODY_PART_SLUGS = {
 export function installSessionHandlers(context) {
   ctx = context;
   window.openBookModal = openBookModal;
+  window.openLogWorkoutModal = openLogWorkoutModal;
   window.openEditModal = openEditModal;
   window.saveSession = saveSession;
+  window.setBookType = setBookType;
+  window.setCompleteType = setCompleteType;
   window.openCompleteModal = (id) => openWorkoutLogModal(id, 'log');
   window.openWorkoutLogModal = openWorkoutLogModal;
   window.saveWorkoutLog = saveWorkoutLog;
@@ -29,7 +35,39 @@ export function installSessionHandlers(context) {
   window.exportICS = exportICS;
   window.setLogTrendMode = setLogTrendMode;
   window.setLogBodyFilter = setLogBodyFilter;
+  window.setLogTypeFilter = setLogTypeFilter;
   window.toggleLogSession = toggleLogSession;
+}
+
+function getWorkoutType(session) {
+  return session?.type === 'personal' ? 'personal' : 'pt';
+}
+
+function getWorkoutTypeLabel(session) {
+  return getWorkoutType(session) === 'personal' ? 'Personal Workout' : 'PT Session';
+}
+
+function eventDotHTML(session, className = '') {
+  const status = session.status === 'cancelled' ? 'cancelled' : session.status === 'completed' ? 'completed' : 'upcoming';
+  return `<span class="event-dot status-${status} event-type-${getWorkoutType(session)} ${className}"></span>`;
+}
+
+function setSegmentedType(inputId, type) {
+  const value = type === 'personal' ? 'personal' : 'pt';
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.value = value;
+  input.closest('.type-selector')?.querySelectorAll('button').forEach(button => {
+    button.classList.toggle('active', button.dataset.type === value);
+  });
+}
+
+function setBookType(type) {
+  setSegmentedType('book-type', type);
+}
+
+function setCompleteType(type) {
+  setSegmentedType('complete-type', type);
 }
 
 export function sessionCardHTML(s, options = {}) {
@@ -40,7 +78,8 @@ export function sessionCardHTML(s, options = {}) {
   const dur = s.duration ? ` · ${s.duration} hr` : '';
   const loc = s.location ? ` · ${s.location}` : '';
   const notes = s.notes || (s.exercises?.length ? `${s.exercises.length} exercise${s.exercises.length > 1 ? 's' : ''} logged` : '');
-  const dot = { booked: '<span class="session-status-dot booked-dot"></span>', completed: '<span class="session-status-dot completed-dot"></span>', cancelled: '<span class="session-status-dot cancelled-dot"></span>' }[s.status] || '';
+  const dot = eventDotHTML(s, 'session-status-dot');
+  const typeLabel = getWorkoutTypeLabel(s);
   const actions = s.status === 'booked'
     ? `<button class="btn btn-ghost btn-sm" onclick="openCompleteModal('${s.id}')">✓ Complete</button>
        <button class="btn btn-ghost btn-sm" onclick="openEditModal('${s.id}')">Edit</button>
@@ -51,7 +90,7 @@ export function sessionCardHTML(s, options = {}) {
     <div class="session-date-block"><div style="display:flex;align-items:center;gap:4px;">${dot}<div class="session-day">${day}</div></div><div class="session-month">${month}</div></div>
     <div class="session-info">
       <div class="session-time">${time}${dur}${loc}</div>
-      ${notes ? `<div class="session-notes">${notes}</div>` : ''}
+      <div class="session-notes">${typeLabel}${notes ? ` · ${notes}` : ''}</div>
     </div>
     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">${actions}</div>
   </div>`;
@@ -63,16 +102,8 @@ export function renderLog(ctx) {
     .filter(s => s.status === 'completed')
     .sort((a,b) => new Date(b.completedAt || b.datetime) - new Date(a.completedAt || a.datetime));
 
-  if (!completed.length) {
-    document.getElementById('log-list').innerHTML = `
-      <div class="log-empty">
-        <div class="empty-state-title">No completed sessions yet</div>
-        <button class="btn btn-primary btn-sm" onclick="openBookModal()">+ Log Workout</button>
-      </div>`;
-    return;
-  }
-
-  const filtered = filterSessionsByBodyPart(completed, logBodyFilter);
+  const typeFiltered = filterSessionsByType(completed, logTypeFilter);
+  const filtered = filterSessionsByBodyPart(typeFiltered, logBodyFilter);
   const buckets = buildTrendBuckets(filtered, logTrendMode, logBodyFilter);
   const currentVolume = buckets[buckets.length - 1]?.volume || 0;
   const distribution = buildBodyPartDistribution(filtered);
@@ -86,7 +117,10 @@ export function renderLog(ctx) {
     : `<div class="log-muted">No volume for this filter yet</div>`;
   const rows = filtered.length
     ? filtered.map(logSessionRowHTML).join('')
-    : `<div class="log-empty"><div class="empty-state-title">No completed sessions for this filter</div></div>`;
+    : `<div class="log-empty">
+        <div class="empty-state-title">${completed.length ? 'No completed sessions for this filter' : 'No completed sessions yet'}</div>
+        ${completed.length ? '' : '<button class="btn btn-primary btn-sm" onclick="openLogWorkoutModal()">+ Log Workout</button>'}
+      </div>`;
 
   document.getElementById('log-list').innerHTML = `
     <div class="log-page-head">
@@ -95,9 +129,15 @@ export function renderLog(ctx) {
         <div class="log-subtitle">Training history</div>
       </div>
       <div class="log-controls">
+        <button class="btn btn-primary btn-sm" onclick="openLogWorkoutModal()">+ Log Workout</button>
         <div class="log-segmented" aria-label="Volume period">
           <button class="${logTrendMode === 'weekly' ? 'active' : ''}" onclick="setLogTrendMode('weekly')">Weekly</button>
           <button class="${logTrendMode === 'monthly' ? 'active' : ''}" onclick="setLogTrendMode('monthly')">Monthly</button>
+        </div>
+        <div class="log-segmented" aria-label="Workout type filter">
+          <button class="${logTypeFilter === 'All' ? 'active' : ''}" onclick="setLogTypeFilter('All')">All</button>
+          <button class="${logTypeFilter === 'PT Only' ? 'active' : ''}" onclick="setLogTypeFilter('PT Only')">PT Only</button>
+          <button class="${logTypeFilter === 'Personal Only' ? 'active' : ''}" onclick="setLogTypeFilter('Personal Only')">Personal Only</button>
         </div>
         <select class="log-filter" onchange="setLogBodyFilter(this.value)" aria-label="Body part filter">
           ${LOG_BODY_FILTERS.map(label => `<option value="${label}" ${label === logBodyFilter ? 'selected' : ''}>${label}</option>`).join('')}
@@ -123,6 +163,11 @@ function setLogTrendMode(mode) {
 
 function setLogBodyFilter(filter) {
   logBodyFilter = LOG_BODY_FILTERS.includes(filter) ? filter : 'All';
+  ctx?.rerenderActive();
+}
+
+function setLogTypeFilter(filter) {
+  logTypeFilter = LOG_TYPE_FILTERS.includes(filter) ? filter : 'All';
   ctx?.rerenderActive();
 }
 
@@ -164,6 +209,10 @@ function getExerciseVolume(exercise) {
   return getExerciseSets(exercise).reduce((sum, set) => sum + set.weight * set.reps * set.sets, 0);
 }
 
+function getExercisesVolume(exercises) {
+  return Math.round((exercises || []).reduce((sum, exercise) => sum + getExerciseVolume(exercise), 0));
+}
+
 function getExerciseBodyParts(exercise) {
   const muscles = exercise.muscles?.length ? exercise.muscles : (getExerciseMeta(exercise.name)?.muscles || []);
   const parts = Object.entries(BODY_PART_SLUGS)
@@ -195,6 +244,12 @@ function getPrimaryBodyPart(session) {
 function filterSessionsByBodyPart(sessions, filter) {
   if (filter === 'All') return sessions;
   return sessions.filter(session => Object.keys(getSessionBodyVolumes(session)).includes(filter));
+}
+
+function filterSessionsByType(sessions, filter) {
+  if (filter === 'PT Only') return sessions.filter(session => getWorkoutType(session) === 'pt');
+  if (filter === 'Personal Only') return sessions.filter(session => getWorkoutType(session) === 'personal');
+  return sessions;
 }
 
 function buildBodyPartDistribution(sessions) {
@@ -277,6 +332,7 @@ function logSessionRowHTML(session) {
   const duration = `${session.duration || '—'} hrs`;
   const bodyPart = getPrimaryBodyPart(session);
   const volume = getSessionVolume(session);
+  const typeLabel = getWorkoutTypeLabel(session);
   const detailRows = (session.exercises || []).map(exercise => {
     const sets = getExerciseSets(exercise);
     const setText = Array.isArray(exercise.sets)
@@ -290,12 +346,12 @@ function logSessionRowHTML(session) {
   const notes = session.completionNotes || session.notes;
   return `<div class="log-session" data-log-session="${session.id}">
     <button class="log-session-main" onclick="toggleLogSession('${session.id}')" type="button">
-      <span class="log-session-date">${date}</span>
-      <span class="log-session-mobile-meta">${bodyPart} · ${duration} · ${formatVolume(volume)} kg</span>
+      <span class="log-session-date">${eventDotHTML(session)}${date}</span>
+      <span class="log-session-mobile-meta">${typeLabel} · ${bodyPart} · ${duration} · ${formatVolume(volume)} kg</span>
       <span>${duration}</span>
       <span>${bodyPart}</span>
       <span>${formatVolume(volume)} kg</span>
-      <span>Completed</span>
+      <span>${typeLabel} · Completed</span>
     </button>
     <div class="log-session-detail">
       ${detailRows || '<div class="log-muted">No exercises logged</div>'}
@@ -305,22 +361,29 @@ function logSessionRowHTML(session) {
 }
 
 // ===== SESSIONS =====
-function openBookModal() {
+function openBookModal(defaultType = 'pt', mode = 'book') {
   currentEditId = null;
-  document.getElementById('book-modal-title').textContent = 'Book Session';
-  document.getElementById('book-save-btn').textContent = 'Save Session';
+  sessionEntryMode = mode === 'log' ? 'log' : 'book';
+  document.getElementById('book-modal-title').textContent = sessionEntryMode === 'log' ? 'Log Workout' : 'Book Session';
+  document.getElementById('book-save-btn').textContent = sessionEntryMode === 'log' ? 'Save Workout' : 'Save Session';
   document.getElementById('export-ics-btn').style.display = 'none';
   document.getElementById('ics-notice').style.display = 'none';
+  setBookType(defaultType);
   if (!document.getElementById('book-date').value)
     document.getElementById('book-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('exercise-rows').innerHTML = '';
   ctx.openModal('book-modal');
 };
 
+function openLogWorkoutModal() {
+  openBookModal('personal', 'log');
+}
+
 function openEditModal(id) {
   const s = ctx.state.sessions.find(x => x.id === id);
   if (!s) return;
   currentEditId = id;
+  sessionEntryMode = 'book';
   document.getElementById('book-modal-title').textContent = 'Edit Session';
   document.getElementById('book-save-btn').textContent = 'Update Session';
   document.getElementById('export-ics-btn').style.display = 'inline-flex';
@@ -328,6 +391,7 @@ function openEditModal(id) {
   const dt = new Date(s.datetime);
   document.getElementById('book-date').value = dt.toISOString().split('T')[0];
   document.getElementById('book-time').value = dt.toTimeString().slice(0,5);
+  setBookType(getWorkoutType(s));
   document.getElementById('book-duration').value = s.duration || '1.5';
   document.getElementById('book-location').value = s.location || '';
   document.getElementById('book-notes').value = s.notes || '';
@@ -342,21 +406,26 @@ async function saveSession() {
   if (!date) { ctx.showToast('Please select a date'); return; }
   const datetime = `${date}T${time||'10:00'}`;
   const pkg = ctx.getActivePackage();
+  const type = document.getElementById('book-type').value === 'personal' ? 'personal' : 'pt';
   const id = currentEditId || ctx.genId();
   const existing = currentEditId ? ctx.state.sessions.find(x => x.id === currentEditId) : null;
+  const exercises = ctx.getExerciseRows('exercise-rows');
+  const isDirectLog = sessionEntryMode === 'log' && !existing;
   const sessionData = {
     datetime, duration: document.getElementById('book-duration').value,
+    type,
     location: document.getElementById('book-location').value,
     notes: document.getElementById('book-notes').value,
-    exercises: ctx.getExerciseRows('exercise-rows'),
-    status: existing?.status || 'booked',
-    packageId: existing?.packageId || (pkg ? pkg.id : null),
+    exercises,
+    status: existing?.status || (isDirectLog ? 'completed' : 'booked'),
+    packageId: type === 'pt' ? (existing?.packageId || (pkg ? pkg.id : null)) : null,
     completionNotes: existing?.completionNotes || null,
-    completedAt: existing?.completedAt || null,
+    completedAt: existing?.completedAt || (isDirectLog ? new Date().toISOString() : null),
+    totalVolume: existing?.totalVolume || (isDirectLog ? getExercisesVolume(exercises) : null),
   };
   await ctx.fsSet('sessions', id, sessionData);
   ctx.closeModal('book-modal');
-  ctx.showToast(currentEditId ? 'Session updated' : 'Session scheduled');
+  ctx.showToast(currentEditId ? 'Session updated' : (isDirectLog ? 'Workout logged' : 'Session scheduled'));
 };
 
 // ===== WORKOUT LOG MODAL =====
@@ -372,6 +441,7 @@ function openWorkoutLogModal(id, mode = 'log') {
   const trainerStr = s.location || '';
   document.getElementById('wl-subtitle').textContent = trainerStr ? `${dateStr} · ${trainerStr}` : dateStr;
   document.getElementById('wl-save-btn').textContent = mode === 'edit' ? 'Save Changes' : 'Save & Complete';
+  setCompleteType(getWorkoutType(s));
   ctx.loadCxExercises(s.exercises || []);
   document.getElementById('complete-notes').value = s.completionNotes || '';
   ctx.openModal('complete-modal');
@@ -382,7 +452,16 @@ async function saveWorkoutLog() {
   if (!s) return;
   const exercises = ctx.getCxExercises();
   const totalVolume = Math.round(exercises.reduce((sum, e) => sum + e.sets.reduce((acc, set) => acc + set.reps * set.weight, 0), 0));
-  const update = { ...s, exercises, totalVolume, completionNotes: document.getElementById('complete-notes').value };
+  const type = document.getElementById('complete-type').value === 'personal' ? 'personal' : 'pt';
+  const activePackage = ctx.getActivePackage();
+  const update = {
+    ...s,
+    type,
+    packageId: type === 'pt' ? (s.packageId || activePackage?.id || null) : null,
+    exercises,
+    totalVolume,
+    completionNotes: document.getElementById('complete-notes').value
+  };
   if (workoutLogMode === 'log') {
     update.status = 'completed';
     update.completedAt = new Date().toISOString();
@@ -398,22 +477,22 @@ function openViewModal(id) {
   if (!s) return;
   const dt = new Date(s.datetime);
   const pkg = ctx.state.packages.find(p => p.id === s.packageId);
+  const typeLabel = getWorkoutTypeLabel(s);
   const exercises = s.exercises || [];
-  const totalSets = exercises.reduce((sum, e) => sum + (parseInt(e.sets) || 0), 0);
-  const totalReps = exercises.reduce((sum, e) => { const sets = parseInt(e.sets)||0; const reps = parseInt(e.reps)||0; return sum + sets*reps; }, 0);
-  const totalVolume = exercises.reduce((sum, e) => { const sets = parseInt(e.sets)||0; const reps = parseInt(e.reps)||0; const weight = parseFloat(e.weight)||0; return sum + sets*reps*weight; }, 0);
+  const totalSets = exercises.reduce((sum, e) => sum + getExerciseSets(e).reduce((acc, set) => acc + set.sets, 0), 0);
+  const totalReps = exercises.reduce((sum, e) => sum + getExerciseSets(e).reduce((acc, set) => acc + set.sets * set.reps, 0), 0);
+  const totalVolume = exercises.reduce((sum, e) => sum + getExerciseVolume(e), 0);
   const exDetailHTML = exercises.map(ex => {
-    const sets = parseInt(ex.sets) || 0;
-    const reps = parseInt(ex.reps) || 0;
-    const weight = parseFloat(ex.weight) || 0;
+    const sets = getExerciseSets(ex);
+    const heaviest = Math.max(...sets.map(set => set.weight), 0);
     const dbEntry = EXERCISE_DB.find(e => e.name.toLowerCase() === (ex.name||'').toLowerCase());
     const musclesLabel = (ex.muscles || dbEntry?.muscles || []).map(m => m.replace(/-/g,' ')).join(', ');
     let badgeClass = '';
-    if (weight > 60) badgeClass = 'intensity-3';
-    else if (weight > 30) badgeClass = 'intensity-2';
-    const badges = Array.from({length: sets}, () =>
-      `<div class="set-badge ${badgeClass}"><span>${weight ? weight+'kg' : sets+'×'}</span><span class="set-badge-reps">${reps}×</span></div>`
-    ).join('');
+    if (heaviest > 60) badgeClass = 'intensity-3';
+    else if (heaviest > 30) badgeClass = 'intensity-2';
+    const badges = sets.flatMap(set => Array.from({length: set.sets}, () =>
+      `<div class="set-badge ${badgeClass}"><span>${set.weight ? set.weight+'kg' : '—'}</span><span class="set-badge-reps">${set.reps}×</span></div>`
+    )).join('');
     return `<div class="ex-detail-card">
       <div class="ex-detail-name">${ex.name}</div>
       ${musclesLabel ? `<div class="ex-detail-muscles-tag">${musclesLabel}</div>` : ''}
@@ -424,7 +503,7 @@ function openViewModal(id) {
     <div class="session-detail-wrap">
       <div style="font-size:18px;font-weight:600;margin-bottom:4px;">${dt.toLocaleDateString('en',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
       <div style="font-size:13px;color:var(--gray-600);margin-bottom:8px;">${dt.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}${s.duration?' · '+s.duration+' hr':''}${s.location?' · '+s.location:''}</div>
-      ${pkg?`<div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Package: ${pkg.name}</div>`:''}
+      <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">${eventDotHTML(s)} ${typeLabel}${pkg && getWorkoutType(s) === 'pt' ? ` · Package: ${pkg.name}` : ''}</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:16px 0;border-top:1px solid var(--gray-200);border-bottom:1px solid var(--gray-200);">
         <div class="session-stat"><div class="session-stat-val">${totalSets}</div><div class="session-stat-label">Sets</div></div>
         <div class="session-stat"><div class="session-stat-val">${totalReps}</div><div class="session-stat-label">Reps</div></div>
@@ -478,7 +557,8 @@ function buildICS(s) {
   const end = new Date(dt.getTime() + (parseFloat(s.duration)||1.5)*3600000);
   const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
   const desc = [s.notes, s.exercises?.map(e=>`${e.name} ${e.sets}x${e.reps} @ ${e.weight}kg`).join('; ')].filter(Boolean).join(' | ');
-  return `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//PT Tracker//EN\r\nBEGIN:VEVENT\r\nUID:${s.id}@pttracker\r\nDTSTAMP:${fmt(new Date())}\r\nDTSTART:${fmt(dt)}\r\nDTEND:${fmt(end)}\r\nSUMMARY:PT Session${s.location?' @ '+s.location:''}\r\n${desc?'DESCRIPTION:'+desc+'\r\n':''}${s.location?'LOCATION:'+s.location+'\r\n':''}END:VEVENT\r\nEND:VCALENDAR`;
+  const summary = getWorkoutType(s) === 'personal' ? 'Personal Workout' : 'PT Session';
+  return `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//PT Tracker//EN\r\nBEGIN:VEVENT\r\nUID:${s.id}@pttracker\r\nDTSTAMP:${fmt(new Date())}\r\nDTSTART:${fmt(dt)}\r\nDTEND:${fmt(end)}\r\nSUMMARY:${summary}${s.location?' @ '+s.location:''}\r\n${desc?'DESCRIPTION:'+desc+'\r\n':''}${s.location?'LOCATION:'+s.location+'\r\n':''}END:VEVENT\r\nEND:VCALENDAR`;
 }
 
 function exportSingleICS(id) {
@@ -487,7 +567,7 @@ function exportSingleICS(id) {
   const blob = new Blob([buildICS(s)], {type:'text/calendar'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `pt-session-${new Date(s.datetime).toISOString().split('T')[0]}.ics`;
+  a.download = `${getWorkoutType(s) === 'personal' ? 'personal-workout' : 'pt-session'}-${new Date(s.datetime).toISOString().split('T')[0]}.ics`;
   a.click();
   ctx.showToast('.ics downloaded');
 }
