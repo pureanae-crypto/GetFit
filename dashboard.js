@@ -13,7 +13,7 @@ export function renderDashboard(ctx) {
   const bookedSegment = Math.min(booked, Math.max(0, stats.total - stats.completed));
 
   document.getElementById('hero-remaining').textContent = pkg ? ctx.formatHours(stats.remaining) : '-';
-  document.getElementById('hero-package-name').textContent = ctx.formatToday();
+  document.getElementById('balance-as-of').textContent = `As of ${ctx.formatToday('short')}`;
   document.getElementById('balance-booked-label').textContent = `Booked sessions (${bookedSessions.length})`;
   document.getElementById('balance-booked-hours').textContent = `${ctx.formatHours(booked)} hrs`;
   document.getElementById('balance-available-hours').textContent = `${ctx.formatHours(available)} hrs`;
@@ -34,8 +34,12 @@ export function renderDashboard(ctx) {
 
   const visibleUpcoming = bookedSessions.slice(0, 5);
   document.getElementById('upcoming-list').innerHTML = bookedSessions.length === 0
-    ? `<div class="empty-state"><div class="empty-state-title">No upcoming sessions</div></div>`
-    : visibleUpcoming.map(sessionCardHTML).join('');
+    ? `<div class="empty-state upcoming-empty">
+        <div class="empty-state-title">No upcoming sessions</div>
+        <button class="btn btn-primary" onclick="openBookModal()">+ Book Session</button>
+      </div>`
+    : `${visibleUpcoming.map(sessionCardHTML).join('')}
+      <div class="upcoming-actions"><button class="btn btn-primary" onclick="openBookModal()">+ Book Session</button></div>`;
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
