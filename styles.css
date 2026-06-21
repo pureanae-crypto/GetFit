@@ -216,6 +216,83 @@
   .workout-exercise-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--gray-200); align-items: center; }
   .workout-exercise-row:last-child { border-bottom: none; }
 
+  .log-page-head {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 20px;
+    padding-bottom: 16px; border-bottom: 1px solid var(--gray-200); margin-bottom: 28px;
+  }
+  .log-title { font-size: 22px; font-weight: 600; letter-spacing: 0; line-height: 1.1; text-transform: uppercase; }
+  .log-subtitle { font-size: 12px; color: var(--gray-400); margin-top: 4px; letter-spacing: 0.03em; }
+  .log-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+  .log-segmented { display: inline-flex; border: 1px solid var(--gray-200); }
+  .log-segmented button {
+    border: none; background: var(--white); color: var(--gray-600); cursor: pointer;
+    font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 7px 12px;
+  }
+  .log-segmented button + button { border-left: 1px solid var(--gray-200); }
+  .log-segmented button.active { background: var(--black); color: var(--white); }
+  .log-filter {
+    min-width: 150px; border-color: var(--gray-200); color: var(--gray-600);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 7px 10px; height: 31px;
+  }
+  .log-analytics { margin-bottom: 34px; }
+  .log-metric-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gray-400); margin-bottom: 4px;
+  }
+  .log-metric-value { font-size: 34px; font-weight: 600; line-height: 1.1; letter-spacing: 0; }
+  .log-metric-value span { font-size: 12px; color: var(--gray-400); font-weight: 500; margin-left: 6px; }
+  .log-chart { display: block; width: 100%; height: 200px; margin: 18px 0 18px; overflow: visible; }
+  .log-chart line { stroke: var(--gray-200); stroke-width: 1; }
+  .log-chart polyline { fill: none; stroke: var(--black); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .log-chart circle { fill: var(--black); }
+  .log-chart text { fill: var(--gray-400); font-size: 10px; font-family: inherit; letter-spacing: 0.04em; }
+  .log-body-summary {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px 32px;
+    border-top: 1px solid var(--gray-200); padding-top: 14px;
+  }
+  .log-body-row {
+    display: grid; grid-template-columns: 112px 1fr 36px; align-items: center; gap: 10px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gray-600);
+  }
+  .log-body-row > span:last-child { text-align: right; color: var(--gray-400); }
+  .log-body-track { height: 2px; background: var(--gray-200); position: relative; }
+  .log-body-track span { display: block; height: 100%; background: var(--black); }
+  .log-section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gray-400); padding-bottom: 8px; border-bottom: 1px solid var(--gray-200);
+  }
+  .log-ledger { margin-bottom: 24px; }
+  .log-session { border-bottom: 1px solid var(--gray-200); }
+  .log-session-main {
+    width: 100%; display: grid; grid-template-columns: 1.35fr 0.75fr 1fr 0.9fr 0.8fr; gap: 16px;
+    align-items: center; border: none; background: var(--white); color: var(--gray-600);
+    font-family: inherit; text-align: left; cursor: pointer; padding: 13px 0; font-size: 12px;
+  }
+  .log-session-main:hover { color: var(--black); }
+  .log-session-date { color: var(--black); font-weight: 500; }
+  .log-session-mobile-meta { display: none; }
+  .log-session-main span:nth-child(5), .log-session-main span:nth-child(6) { text-align: right; }
+  .log-session-detail { display: none; padding: 0 0 16px 0; }
+  .log-session.open .log-session-detail { display: block; }
+  .log-exercise-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 16px; padding: 6px 0;
+    font-size: 12px; color: var(--gray-600);
+  }
+  .log-exercise-row span:first-child { color: var(--black); font-weight: 500; }
+  .log-exercise-row span:last-child { color: var(--gray-400); }
+  .log-session-notes {
+    margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--gray-100);
+    font-size: 12px; color: var(--gray-600); line-height: 1.6;
+  }
+  .log-empty {
+    min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; text-align: center; border-bottom: 1px solid var(--gray-200);
+  }
+  .log-muted { font-size: 12px; color: var(--gray-400); }
+
   .ics-notice { font-size: 11px; color: var(--gray-400); margin-top: 6px; }
 
   #toast { position: fixed; bottom: 24px; right: 24px; background: var(--black); color: var(--white); padding: 12px 20px; font-size: 12px; font-weight: 500; letter-spacing: 0.05em; z-index: 9999; display: none; animation: fadeInUp 0.2s ease; }
@@ -345,4 +422,15 @@
     .session-card { flex-wrap: wrap; }
     .bottom-sheet { top: 5vh; bottom: 5vh; }
     .view-title-row { align-items: flex-start; }
+    .log-page-head { align-items: flex-start; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+    .log-controls { justify-content: flex-start; width: 100%; }
+    .log-filter { flex: 1; min-width: 0; }
+    .log-metric-value { font-size: 30px; }
+    .log-metric-value span { display: block; margin: 4px 0 0; }
+    .log-body-summary { grid-template-columns: 1fr; gap: 8px; }
+    .log-session-main { grid-template-columns: 1fr; gap: 3px; padding: 13px 0; }
+    .log-session-mobile-meta { display: block; color: var(--gray-600); }
+    .log-session-main span:nth-child(3), .log-session-main span:nth-child(4), .log-session-main span:nth-child(5) { display: none; }
+    .log-session-main span:nth-child(6) { text-align: left; margin-top: 4px; color: var(--gray-400); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .log-exercise-row { grid-template-columns: 1fr; gap: 2px; }
   }
