@@ -357,7 +357,6 @@ function renderDashboard() {
   const booked = Math.round(bookedHours * 10) / 10;
   const available = Math.round(Math.max(0, stats.remaining - bookedHours) * 10) / 10;
   const bookedSegment = Math.min(booked, Math.max(0, stats.total - stats.completed));
-  const committed = Math.round((stats.completed + booked) * 10) / 10;
 
   document.getElementById('hero-remaining').textContent = pkg ? formatHours(stats.remaining) : '—';
   document.getElementById('hero-package-name').textContent = formatToday();
@@ -370,7 +369,7 @@ function renderDashboard() {
   const progressSection = document.getElementById('progress-section');
   if (pkg && stats.total > 0) {
     progressSection.style.display = 'block';
-    document.getElementById('progress-label').textContent = `${formatHours(stats.completed)} (${formatHours(committed)}) / ${stats.total} hrs`;
+    document.getElementById('progress-label').textContent = `${formatHours(stats.completed)} (${formatHours(booked)}) / ${stats.total} hrs`;
     document.getElementById('progress-completed').style.width = Math.min(100, (stats.completed / stats.total) * 100) + '%';
     document.getElementById('progress-booked').style.width = (bookedSegment / stats.total) * 100 + '%';
     document.getElementById('progress-available').style.width = (available / stats.total) * 100 + '%';
@@ -433,7 +432,7 @@ function renderCalendar() {
 }
 function calendarDotClass(s) {
   if (s.status === 'cancelled') return 'cancelled-dot';
-  if (s.status === 'completed' || new Date(s.datetime) < new Date()) return 'completed-dot';
+  if (s.status === 'completed') return 'completed-dot';
   return 'booked-dot';
 }
 window.changeMonth = function(dir) {
