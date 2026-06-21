@@ -426,15 +426,34 @@ function renderCalendar() {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = today.getFullYear()===year && today.getMonth()===month && today.getDate()===d;
     const daySessions = state.sessions.filter(s => s.datetime?.startsWith(dateStr));
-    const dots = daySessions.map(s => `<div class="cell-dot ${s.status==='completed'?'completed-dot':'booked-dot'}"></div>`).join('');
+    const dots = daySessions.map(s => `<div class="cell-dot ${calendarDotClass(s)}"></div>`).join('');
     html += `<div class="calendar-cell ${isToday?'today':''}" onclick="calCellClick('${dateStr}')"><div class="cell-num">${d}</div>${dots}</div>`;
   }
   document.getElementById('calendar-grid').innerHTML = html;
+}
+function calendarDotClass(s) {
+  if (s.status === 'cancelled') return 'cancelled-dot';
+  if (s.status === 'completed' || new Date(s.datetime) < new Date()) return 'completed-dot';
+  return 'booked-dot';
 }
 window.changeMonth = function(dir) {
   state.calendarMonth += dir;
   if (state.calendarMonth < 0) { state.calendarMonth = 11; state.calendarYear--; }
   if (state.calendarMonth > 11) { state.calendarMonth = 0; state.calendarYear++; }
+  renderCalendar();
+};
+window.openCalendarJump = function() {
+  document.getElementById('jump-month').value = state.calendarMonth;
+  document.getElementById('jump-year').value = state.calendarYear;
+  openModal('calendar-jump-modal');
+};
+window.applyCalendarJump = function() {
+  const month = parseInt(document.getElementById('jump-month').value, 10);
+  const year = parseInt(document.getElementById('jump-year').value, 10);
+  if (Number.isNaN(month) || Number.isNaN(year)) { showToast('Choose a month and year'); return; }
+  state.calendarMonth = Math.min(11, Math.max(0, month));
+  state.calendarYear = Math.min(2100, Math.max(2020, year));
+  closeModal('calendar-jump-modal');
   renderCalendar();
 };
 window.calCellClick = function(dateStr) {
@@ -770,13 +789,26 @@ window.deletePackage = async function(id) {
 window.cancelSession = async function(id) {
   const s = state.sessions.find(x => x.id === id);
   if (!s) return;
-  await fsSet('sessions', id, {...s, status:'cancelled'});
-  closeModal('view-modal'); showToast('Session cancelled');
+  const startsAt = new Date(s.datetime);
+  const hoursUntilStart = (startsAt - new Date()) / 36e5;
+  if (hoursUntilStart >= 0 && hoursUntilStart <= 2) {
+    await fsSet('sessions', id, {...s, status:'cancelled'});
+    closeModal('view-modal');
+    rerenderActive();
+    showToast('Session cancelled');
+  } else {
+    await fsDel('sessions', id);
+    closeModal('view-modal');
+    rerenderActive();
+    showToast('Session deleted');
+  }
 };
 window.deleteSession = async function(id) {
   if (!confirm('Delete this session permanently?')) return;
   await fsDel('sessions', id);
-  closeModal('view-modal'); showToast('Session deleted');
+  closeModal('view-modal');
+  rerenderActive();
+  showToast('Session deleted');
 };
 
 // ===== ICS =====
