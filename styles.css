@@ -224,13 +224,15 @@
   /* EXERCISE PICKER BOTTOM SHEET */
   .bottom-sheet-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-    z-index: 1000; align-items: flex-end; justify-content: center;
+    z-index: 1000;
   }
-  .bottom-sheet-overlay.open { display: flex; }
+  .bottom-sheet-overlay.open { display: block; }
   .bottom-sheet {
-    background: var(--white); width: 100%; max-width: 640px;
-    border-radius: 16px 16px 0 0; height: 85vh;
+    position: fixed; top: 8vh; bottom: 8vh; left: 0; right: 0;
+    background: var(--white); max-width: 640px; margin: 0 auto;
+    border-radius: 16px;
     display: flex; flex-direction: column; overflow: hidden;
+    z-index: 1001;
     animation: slideUp 0.25s ease;
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -341,6 +343,6 @@
     .hero-number { font-size: 72px; }
     .nav-tab { padding: 6px 10px; font-size: 11px; }
     .session-card { flex-wrap: wrap; }
-    .bottom-sheet { max-height: 92vh; }
+    .bottom-sheet { top: 5vh; bottom: 5vh; }
     .view-title-row { align-items: flex-start; }
   }
