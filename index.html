@@ -48,6 +48,7 @@
     <button class="nav-tab active" onclick="showView('dashboard')">Overview</button>
     <button class="nav-tab" onclick="showView('calendar')">Calendar</button>
     <button class="nav-tab" onclick="showView('log')">Log</button>
+    <button class="nav-tab" onclick="showView('packages')">Packages</button>
   </div>
   <div class="nav-user">
     <span class="nav-user-email" id="nav-user-email"></span>
@@ -82,7 +83,8 @@
       <div class="progress-segment progress-available" id="progress-available" style="width:0%"></div>
     </div>
   </div>
-  <div class="section-label">Upcoming Sessions</div>
+  <div id="overview-package-summary" class="overview-package-summary"></div>
+  <div class="section-label">Upcoming PT Sessions</div>
   <div id="upcoming-list"></div>
   <hr style="border:none; border-top:1px solid var(--gray-200); margin:32px 0;">
   <div class="section-label">Recently Completed</div>
@@ -93,7 +95,7 @@
 <div id="view-calendar" class="view">
   <div class="view-title-row">
     <div class="section-label">Calendar</div>
-    <button class="btn btn-primary btn-sm" onclick="openBookModal()">+ Book Session</button>
+    <button class="btn btn-primary btn-sm" onclick="openBookModal()">+ Book PT Session</button>
   </div>
   <div class="calendar-header">
     <button class="calendar-month-label" id="cal-month-label" onclick="openCalendarJump()"></button>
@@ -105,9 +107,10 @@
   </div>
   <div class="calendar-grid" id="calendar-grid"></div>
   <div class="calendar-legend">
-    <span><span class="legend-dot booked-dot"></span> Upcoming</span>
-    <span><span class="legend-dot completed-dot"></span> Completed</span>
-    <span><span class="legend-dot cancelled-dot"></span> Cancelled</span>
+    <span><span class="event-dot status-upcoming event-type-pt"></span> Upcoming</span>
+    <span><span class="event-dot status-completed event-type-pt"></span> Completed</span>
+    <span><span class="event-dot status-cancelled event-type-pt"></span> Cancelled</span>
+    <span><span class="event-dot status-upcoming event-type-personal"></span> Personal Workout</span>
   </div>
 </div>
 
@@ -118,8 +121,11 @@
 
 <!-- PACKAGES -->
 <div id="view-packages" class="view">
-  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-    <div class="section-label" style="margin:0; border:none; padding:0;">Packages</div>
+  <div class="packages-page-head">
+    <div>
+      <div class="packages-title">Packages</div>
+      <div class="packages-subtitle">Package, payment, expiry and usage ledger</div>
+    </div>
     <button class="btn btn-primary btn-sm" onclick="openPackageModal()">+ New Package</button>
   </div>
   <div id="packages-list"></div>
@@ -131,6 +137,11 @@
     <div class="modal-header">
       <div class="modal-title" id="book-modal-title">Book Session</div>
       <button class="btn btn-ghost" onclick="closeModal('book-modal')">✕</button>
+    </div>
+    <div class="type-selector" aria-label="Workout type">
+      <input type="hidden" id="book-type" value="pt">
+      <button type="button" class="active" data-type="pt" onclick="setBookType('pt')">PT Session</button>
+      <button type="button" data-type="personal" onclick="setBookType('personal')">Personal Workout</button>
     </div>
     <div class="form-grid" style="margin-bottom:16px;">
       <div class="form-group"><label>Date</label><input type="date" id="book-date"></div>
@@ -174,6 +185,11 @@
       </div>
       <button class="btn btn-ghost" onclick="closeModal('complete-modal')">✕</button>
     </div>
+    <div class="type-selector" aria-label="Workout type">
+      <input type="hidden" id="complete-type" value="pt">
+      <button type="button" class="active" data-type="pt" onclick="setCompleteType('pt')">PT Session</button>
+      <button type="button" data-type="personal" onclick="setCompleteType('personal')">Personal Workout</button>
+    </div>
     <div id="cx-list"></div>
     <button class="add-exercise-btn" onclick="addCompleteExercise()">
       <span style="font-size:18px;line-height:1;">+</span> Add Exercise
@@ -204,10 +220,12 @@
       <button class="btn btn-ghost" onclick="closeModal('package-modal')">✕</button>
     </div>
     <div class="form-grid">
-      <div class="form-group form-full"><label>Package Name</label><input type="text" id="pkg-name" placeholder="e.g. June 2025 — 20 Sessions"></div>
-      <div class="form-group"><label>Payment Date</label><input type="date" id="pkg-date"></div>
+      <div class="form-group form-full"><label>Package Name</label><input type="text" id="pkg-name" placeholder="e.g. 40 hrs Package"></div>
+      <div class="form-group"><label>Purchase Date</label><input type="date" id="pkg-date"></div>
+      <div class="form-group"><label>Expiry Date</label><input type="date" id="pkg-expiry"></div>
       <div class="form-group"><label>Total Hours Purchased</label><input type="number" id="pkg-sessions" min="0.5" step="0.5" placeholder="e.g. 40"></div>
-      <div class="form-group"><label>Total Cost (HKD)</label><input type="number" id="pkg-cost" placeholder="4800"></div>
+      <div class="form-group"><label>Total Cost (HKD)</label><input type="number" id="pkg-cost" placeholder="27200"></div>
+      <div class="form-group"><label>Payment Method</label><input type="text" id="pkg-payment" placeholder="Credit Card"></div>
       <div class="form-group"><label>PT Name</label><input type="text" id="pkg-pt" placeholder="Trainer name"></div>
       <div class="form-group form-full"><label>Notes</label><input type="text" id="pkg-notes" placeholder="e.g. 20-session block, valid 6 months"></div>
     </div>
