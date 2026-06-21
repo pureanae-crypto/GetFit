@@ -101,12 +101,8 @@
   .hero-label { font-size: 13px; color: var(--gray-600); font-weight: 400; padding-bottom: 14px; line-height: 1.4; }
   .hero-label span { display: block; color: var(--gray-400); }
   .hero-label .hero-unit { font-size: 13px; color: var(--gray-600); }
-  .balance-breakdown { margin: 0 0 24px; padding-bottom: 24px; border-bottom: 1px solid var(--gray-200); max-width: 360px; }
-  .balance-line { display: flex; justify-content: space-between; gap: 24px; font-size: 12px; line-height: 1.8; }
-  .balance-line span:first-child { color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; font-weight: 600; }
-  .balance-line span:last-child { color: var(--gray-600); font-weight: 500; }
 
-  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 24px 0 32px; }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 8px 0 32px; }
   .stat-box { padding: 16px 0; border-right: 1px solid var(--gray-200); padding-right: 20px; margin-right: 20px; }
   .stat-box:last-child { border-right: none; margin-right: 0; padding-right: 0; }
   .stat-value { font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
