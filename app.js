@@ -352,19 +352,18 @@ function renderDashboard() {
   const upcoming = state.sessions
     .filter(s => s.status === 'booked' && new Date(s.datetime) >= now)
     .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
-  const packageUpcoming = pkg ? upcoming.filter(s => s.packageId === pkg.id) : [];
-  const bookedHours = packageUpcoming.reduce((sum, s) => sum + (parseFloat(s.duration) || 1.0), 0);
+  const bookedHours = upcoming.reduce((sum, s) => sum + (parseFloat(s.duration) || 1.0), 0);
   const booked = Math.round(bookedHours * 10) / 10;
   const available = Math.round(Math.max(0, stats.remaining - bookedHours) * 10) / 10;
   const bookedSegment = Math.min(booked, Math.max(0, stats.total - stats.completed));
 
   document.getElementById('hero-remaining').textContent = pkg ? formatHours(stats.remaining) : '—';
   document.getElementById('hero-package-name').textContent = pkg ? pkg.name : 'No active package';
-  document.getElementById('balance-booked-label').textContent = `Booked sessions (${packageUpcoming.length})`;
+  document.getElementById('balance-booked-label').textContent = `Booked sessions (${upcoming.length})`;
   document.getElementById('balance-booked-hours').textContent = `${formatHours(booked)} hrs`;
   document.getElementById('balance-available-hours').textContent = `${formatHours(available)} hrs`;
   document.getElementById('stat-completed').textContent = formatHours(stats.completed);
-  document.getElementById('stat-upcoming').textContent = packageUpcoming.length;
+  document.getElementById('stat-upcoming').textContent = upcoming.length;
   document.getElementById('stat-available').textContent = formatHours(available);
   const progressSection = document.getElementById('progress-section');
   if (pkg && stats.total > 0) {
