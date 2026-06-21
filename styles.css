@@ -256,7 +256,7 @@
   .picker-cat:hover { border-color: var(--black); color: var(--black); }
   .picker-cat.active { background: var(--black); color: var(--white); border-color: var(--black); }
   .picker-list { overflow-y: auto; flex: 1; min-height: 0; padding: 8px 0 24px; }
-  .picker-item { display: flex; align-items: center; padding: 10px 20px; cursor: pointer; gap: 14px; transition: background 0.1s; }
+  .picker-item { display: flex; align-items: center; padding: 12px 20px; cursor: pointer; gap: 14px; transition: background 0.1s; border: none; background: var(--white); width: 100%; text-align: left; font-family: inherit; color: inherit; touch-action: manipulation; }
   .picker-item:hover { background: var(--gray-100); }
   .picker-item-info { flex: 1; }
   .picker-item-name { font-size: 14px; font-weight: 500; line-height: 1.2; }
