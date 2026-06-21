@@ -210,6 +210,13 @@ window.applyCalendarJump = function() {
   closeModal('calendar-jump-modal');
   renderCalendar();
 };
+window.jumpToToday = function() {
+  const today = new Date();
+  state.calendarMonth = today.getMonth();
+  state.calendarYear = today.getFullYear();
+  closeModal('calendar-jump-modal');
+  renderCalendar();
+};
 window.calCellClick = function(dateStr) {
   const daySessions = state.sessions.filter(s => s.datetime?.startsWith(dateStr));
   if (daySessions.length > 0) openViewModal(daySessions[0].id);
