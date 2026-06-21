@@ -361,6 +361,152 @@ function getExerciseRows(containerId) {
   }, []);
 }
 
+// ===== COMPLETE MODAL EXERCISES =====
+function getUsedExerciseNames() {
+  const names = new Set();
+  state.sessions.forEach(s => (s.exercises || []).forEach(e => { if (e.name) names.add(e.name); }));
+  return [...names].sort();
+}
+
+function getLastUsedWeight(name) {
+  const done = [...state.sessions]
+    .filter(s => s.status === 'completed' && s.exercises?.length)
+    .sort((a, b) => new Date(b.completedAt || b.datetime) - new Date(a.completedAt || a.datetime));
+  for (const s of done) {
+    for (const e of s.exercises) {
+      if (e.name === name) {
+        if (Array.isArray(e.sets) && e.sets.length) return e.sets[e.sets.length - 1].weight || '';
+        if (e.weight) return e.weight;
+      }
+    }
+  }
+  return '';
+}
+
+function updateCxDatalist() {
+  const dl = document.getElementById('cx-names');
+  if (dl) dl.innerHTML = getUsedExerciseNames().map(n => `<option value="${n}">`).join('');
+}
+
+window.refreshSetNumbers = function(block) {
+  block.querySelectorAll('.cx-set-num').forEach((el, i) => { el.textContent = i + 1; });
+}
+function refreshSetNumbers(block) { window.refreshSetNumbers(block); }
+
+function makeCxSetRow(weight, reps) {
+  const row = document.createElement('div');
+  row.className = 'cx-set-row';
+  row.innerHTML = `
+    <span class="cx-set-num">1</span>
+    <input class="ex-row-input cx-weight" type="number" min="0" step="0.5" placeholder="—" value="${weight || ''}" oninput="updateCxVolume()">
+    <input class="ex-row-input cx-reps" type="number" min="1" placeholder="—" value="${reps || ''}" oninput="updateCxVolume()">
+    <button class="ex-row-remove" onclick="const b=this.closest('.cx-block');this.closest('.cx-set-row').remove();refreshSetNumbers(b);updateCxVolume()">✕</button>`;
+  return row;
+}
+
+function makeCxBlock(name) {
+  updateCxDatalist();
+  const block = document.createElement('div');
+  block.className = 'cx-block';
+  block.innerHTML = `
+    <div class="cx-block-header">
+      <input class="cx-name" type="text" list="cx-names" placeholder="Exercise name" oninput="onCxNameInput(this)" value="${name || ''}">
+      <button class="cx-remove-ex" onclick="this.closest('.cx-block').remove();updateCxVolume()">Remove</button>
+    </div>
+    <div class="cx-col-headers"><span></span><span>KG</span><span>REPS</span><span></span></div>
+    <div class="cx-sets"></div>
+    <button class="cx-add-set-btn" onclick="addCxSet(this)">+ Add Set</button>`;
+  return block;
+}
+
+window.addCompleteExercise = function() {
+  const block = makeCxBlock('');
+  document.getElementById('cx-list').appendChild(block);
+  block.querySelector('.cx-name').focus();
+};
+
+window.onCxNameInput = function(input) {
+  const name = input.value.trim();
+  if (!name) return;
+  const w = getLastUsedWeight(name);
+  if (w) {
+    const block = input.closest('.cx-block');
+    block.querySelectorAll('.cx-weight').forEach(el => { if (!el.value) el.value = w; });
+  }
+};
+
+window.addCxSet = function(btn) {
+  const block = btn.closest('.cx-block');
+  const setsContainer = btn.previousElementSibling;
+  const prev = setsContainer.querySelectorAll('.cx-weight');
+  const lastWeight = prev.length ? prev[prev.length - 1].value : '';
+  const row = makeCxSetRow(lastWeight, '');
+  setsContainer.appendChild(row);
+  refreshSetNumbers(block);
+  row.querySelector('.cx-weight').focus();
+  updateCxVolume();
+};
+
+window.updateCxVolume = function() {
+  const vol = getCxExercises().reduce((sum, e) => sum + e.sets.reduce((s, set) => s + set.reps * set.weight, 0), 0);
+  const el = document.getElementById('cx-volume');
+  if (el) el.textContent = `Total volume: ${Math.round(vol)} kg`;
+};
+
+function getCxExercises() {
+  return [...document.querySelectorAll('#cx-list .cx-block')].map(block => ({
+    name: block.querySelector('.cx-name').value.trim(),
+    sets: [...block.querySelectorAll('.cx-set-row')].map(row => ({
+      reps: parseInt(row.querySelector('.cx-reps').value) || 0,
+      weight: parseFloat(row.querySelector('.cx-weight').value) || 0,
+      unit: 'kg'
+    })).filter(s => s.reps > 0)
+  })).filter(e => e.name);
+}
+window.getCxExercises = getCxExercises;
+
+window.loadCxExercises = function(exercises) {
+  const list = document.getElementById('cx-list');
+  list.innerHTML = '';
+  (exercises || []).forEach(ex => {
+    const block = makeCxBlock(ex.name);
+    const setsContainer = block.querySelector('.cx-sets');
+    const sets = Array.isArray(ex.sets) ? ex.sets : (ex.reps ? [{ reps: ex.reps, weight: ex.weight }] : []);
+    sets.forEach(s => setsContainer.appendChild(makeCxSetRow(s.weight, s.reps)));
+    refreshSetNumbers(block);
+    list.appendChild(block);
+  });
+  updateCxVolume();
+};
+
+// ===== QUICK ADJUST (focused kg) =====
+let focusedWeightInput = null;
+
+document.addEventListener('focusin', e => {
+  if (e.target.classList.contains('cx-weight')) {
+    focusedWeightInput = e.target;
+    document.getElementById('cx-adjust-row')?.classList.add('active');
+  }
+});
+document.addEventListener('focusout', e => {
+  if (e.target.classList.contains('cx-weight')) {
+    setTimeout(() => {
+      if (!document.activeElement?.classList.contains('cx-weight')) {
+        focusedWeightInput = null;
+        document.getElementById('cx-adjust-row')?.classList.remove('active');
+      }
+    }, 150);
+  }
+});
+
+window.adjustFocusedWeight = function(delta) {
+  if (!focusedWeightInput) return;
+  const current = parseFloat(focusedWeightInput.value) || 0;
+  focusedWeightInput.value = Math.max(0, current + delta);
+  updateCxVolume();
+  focusedWeightInput.focus();
+};
+
 // ===== PACKAGES =====
 window.openPackageModal = function() {
   document.getElementById('pkg-date').value = new Date().toISOString().split('T')[0];
@@ -413,6 +559,8 @@ installSessionHandlers({
   genId,
   getExerciseRows,
   addExerciseRow: window.addExerciseRow,
+  getCxExercises,
+  loadCxExercises: window.loadCxExercises,
   openModal: window.openModal,
   closeModal: window.closeModal,
   showToast: window.showToast,
