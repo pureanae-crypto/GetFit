@@ -319,12 +319,21 @@ window.openCxPicker = function(btn) {
 window.selectExercise = function(name) {
   const db_entry = EXERCISE_DB.find(e => e.name === name);
   if (pickerContext === 'cx') {
+    const w = getLastUsedWeight(name);
     if (activeCxNameInput) {
+      // Changing name of existing block
       activeCxNameInput.textContent = name;
       activeCxNameInput.dataset.name = name;
       const block = activeCxNameInput.closest('.cx-block');
-      const w = getLastUsedWeight(name);
       if (w) block.querySelectorAll('.cx-weight').forEach(el => { if (!el.value) el.value = w; });
+    } else {
+      // New exercise — create block + first set row
+      const block = makeCxBlock(name);
+      const setsContainer = block.querySelector('.cx-sets');
+      setsContainer.appendChild(makeCxSetRow(w, ''));
+      refreshSetNumbers(block);
+      document.getElementById('cx-list').appendChild(block);
+      updateCxVolume();
     }
   } else {
     const data = { name, sets: '', reps: '', weight: '', muscles: db_entry?.muscles || [] };
@@ -441,9 +450,14 @@ function makeCxBlock(name) {
 }
 
 window.addCompleteExercise = function() {
-  const block = makeCxBlock('');
-  document.getElementById('cx-list').appendChild(block);
-  block.querySelector('.cx-name').focus();
+  activeCxNameInput = null;
+  pickerContext = 'cx';
+  pickerActiveCat = 'All';
+  document.getElementById('picker-search-input').value = '';
+  renderPickerCats();
+  renderPickerList();
+  document.getElementById('exercise-picker-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('picker-search-input').focus(), 300);
 };
 
 window.onCxNameInput = function(input) {
