@@ -230,7 +230,7 @@
   .bottom-sheet {
     background: var(--white); width: 100%; max-width: 640px;
     border-radius: 16px 16px 0 0; max-height: 85vh;
-    display: flex; flex-direction: column;
+    display: flex; flex-direction: column; overflow: hidden;
     animation: slideUp 0.25s ease;
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -253,7 +253,7 @@
   }
   .picker-cat:hover { border-color: var(--black); color: var(--black); }
   .picker-cat.active { background: var(--black); color: var(--white); border-color: var(--black); }
-  .picker-list { overflow-y: auto; flex: 1; padding: 8px 0 24px; }
+  .picker-list { overflow-y: auto; flex: 1; min-height: 0; padding: 8px 0 24px; }
   .picker-item { display: flex; align-items: center; padding: 10px 20px; cursor: pointer; gap: 14px; transition: background 0.1s; }
   .picker-item:hover { background: var(--gray-100); }
   .picker-item-info { flex: 1; }
