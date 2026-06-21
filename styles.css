@@ -243,7 +243,7 @@
   }
   .picker-search-icon { color: var(--gray-400); font-size: 14px; }
   .picker-search input { border: none; outline: none; flex: 1; font-size: 14px; padding: 0; background: transparent; }
-  .picker-cats { display: flex; gap: 8px; overflow-x: auto; padding: 10px 20px 0; scrollbar-width: none; }
+  .picker-cats { display: flex; gap: 8px; overflow-x: auto; padding: 10px 20px 8px; scrollbar-width: none; flex-shrink: 0; }
   .picker-cats::-webkit-scrollbar { display: none; }
   .picker-cat {
     flex-shrink: 0; padding: 5px 12px; font-size: 11px; font-weight: 600;
@@ -254,9 +254,8 @@
   .picker-cat:hover { border-color: var(--black); color: var(--black); }
   .picker-cat.active { background: var(--black); color: var(--white); border-color: var(--black); }
   .picker-list { overflow-y: auto; flex: 1; padding: 8px 0 24px; }
-  .picker-item { display: flex; align-items: center; padding: 14px 20px; cursor: pointer; gap: 14px; transition: background 0.1s; }
+  .picker-item { display: flex; align-items: center; padding: 10px 20px; cursor: pointer; gap: 14px; transition: background 0.1s; }
   .picker-item:hover { background: var(--gray-100); }
-  .picker-item-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--gray-100); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
   .picker-item-info { flex: 1; }
   .picker-item-name { font-size: 14px; font-weight: 500; line-height: 1.2; }
   .picker-item-muscles { font-size: 11px; color: var(--gray-400); margin-top: 2px; text-transform: capitalize; }
@@ -290,8 +289,8 @@
 
   .cx-block { border: 1px solid var(--gray-200); padding: 14px 16px; margin-bottom: 10px; }
   .cx-block-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-  .cx-name { flex: 1; background: none; border: none; border-bottom: 1px solid var(--gray-200); font-family: inherit; font-size: 13px; font-weight: 600; color: var(--black); padding: 2px 0 5px; outline: none; }
-  .cx-name:focus { border-bottom-color: var(--black); }
+  .cx-name { flex: 1; background: none; border: none; border-bottom: 1px solid var(--gray-200); font-family: inherit; font-size: 13px; font-weight: 600; color: var(--black); padding: 2px 0 5px; outline: none; text-align: left; cursor: pointer; }
+  .cx-name:hover { border-bottom-color: var(--gray-400); }
   .cx-remove-ex { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gray-400); padding: 0; white-space: nowrap; flex-shrink: 0; }
   .cx-remove-ex:hover { color: var(--red); }
   .cx-col-headers { display: grid; grid-template-columns: 28px 1fr 1fr 24px; gap: 6px; font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-400); padding: 0 0 4px; }
