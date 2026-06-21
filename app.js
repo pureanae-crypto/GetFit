@@ -295,7 +295,6 @@ function renderPickerList() {
   if (!list.length) { container.innerHTML = `<div class="picker-no-results">No exercises found</div>`; return; }
   container.innerHTML = list.map(ex =>
     `<div class="picker-item" onclick="selectExercise(${JSON.stringify(ex.name)})">
-      <div class="picker-item-icon">${ex.icon}</div>
       <div class="picker-item-info">
         <div class="picker-item-name">${ex.name}</div>
         <div class="picker-item-muscles">${ex.muscles.map(m => m.replace(/-/g,' ')).join(', ')}</div>
@@ -304,11 +303,32 @@ function renderPickerList() {
   ).join('');
 }
 
+let activeCxNameInput = null;
+
+window.openCxPicker = function(input) {
+  activeCxNameInput = input;
+  pickerContext = 'cx';
+  pickerActiveCat = 'All';
+  document.getElementById('picker-search-input').value = input.value || '';
+  renderPickerCats();
+  renderPickerList();
+  document.getElementById('exercise-picker-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('picker-search-input').focus(), 300);
+};
+
 window.selectExercise = function(name) {
   const db_entry = EXERCISE_DB.find(e => e.name === name);
-  const data = { name, sets: '', reps: '', weight: '', muscles: db_entry?.muscles || [] };
-  if (pickerContext === 'book') addExerciseRow(data, 'exercise-rows');
-  else addExerciseRow(data, 'complete-exercise-rows');
+  if (pickerContext === 'cx') {
+    if (activeCxNameInput) {
+      activeCxNameInput.value = name;
+      const block = activeCxNameInput.closest('.cx-block');
+      const w = getLastUsedWeight(name);
+      if (w) block.querySelectorAll('.cx-weight').forEach(el => { if (!el.value) el.value = w; });
+    }
+  } else {
+    const data = { name, sets: '', reps: '', weight: '', muscles: db_entry?.muscles || [] };
+    addExerciseRow(data, pickerContext === 'book' ? 'exercise-rows' : 'complete-exercise-rows');
+  }
   closePicker();
 };
 
@@ -410,7 +430,7 @@ function makeCxBlock(name) {
   block.className = 'cx-block';
   block.innerHTML = `
     <div class="cx-block-header">
-      <input class="cx-name" type="text" list="cx-names" placeholder="Exercise name" oninput="onCxNameInput(this)" value="${name || ''}">
+      <input class="cx-name" type="text" placeholder="Tap to choose exercise" readonly onclick="openCxPicker(this)" value="${name || ''}">
       <button class="cx-remove-ex" onclick="this.closest('.cx-block').remove();updateCxVolume()">Remove</button>
     </div>
     <div class="cx-col-headers"><span></span><span>KG</span><span>REPS</span><span></span></div>
