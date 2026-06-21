@@ -305,11 +305,11 @@ function renderPickerList() {
 
 let activeCxNameInput = null;
 
-window.openCxPicker = function(input) {
-  activeCxNameInput = input;
+window.openCxPicker = function(btn) {
+  activeCxNameInput = btn;
   pickerContext = 'cx';
   pickerActiveCat = 'All';
-  document.getElementById('picker-search-input').value = input.value || '';
+  document.getElementById('picker-search-input').value = btn.dataset.name || '';
   renderPickerCats();
   renderPickerList();
   document.getElementById('exercise-picker-overlay').classList.add('open');
@@ -320,7 +320,8 @@ window.selectExercise = function(name) {
   const db_entry = EXERCISE_DB.find(e => e.name === name);
   if (pickerContext === 'cx') {
     if (activeCxNameInput) {
-      activeCxNameInput.value = name;
+      activeCxNameInput.textContent = name;
+      activeCxNameInput.dataset.name = name;
       const block = activeCxNameInput.closest('.cx-block');
       const w = getLastUsedWeight(name);
       if (w) block.querySelectorAll('.cx-weight').forEach(el => { if (!el.value) el.value = w; });
@@ -430,7 +431,7 @@ function makeCxBlock(name) {
   block.className = 'cx-block';
   block.innerHTML = `
     <div class="cx-block-header">
-      <input class="cx-name" type="text" placeholder="Tap to choose exercise" readonly onclick="openCxPicker(this)" value="${name || ''}">
+      <button class="cx-name" onclick="openCxPicker(this)" data-name="${name || ''}">${name || 'Tap to choose exercise'}</button>
       <button class="cx-remove-ex" onclick="this.closest('.cx-block').remove();updateCxVolume()">Remove</button>
     </div>
     <div class="cx-col-headers"><span></span><span>KG</span><span>REPS</span><span></span></div>
@@ -475,7 +476,7 @@ window.updateCxVolume = function() {
 
 function getCxExercises() {
   return [...document.querySelectorAll('#cx-list .cx-block')].map(block => ({
-    name: block.querySelector('.cx-name').value.trim(),
+    name: (block.querySelector('.cx-name').dataset.name || '').trim(),
     sets: [...block.querySelectorAll('.cx-set-row')].map(row => ({
       reps: parseInt(row.querySelector('.cx-reps').value) || 0,
       weight: parseFloat(row.querySelector('.cx-weight').value) || 0,
