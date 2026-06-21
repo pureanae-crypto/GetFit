@@ -562,7 +562,10 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 // ===== AUTH =====
-const ALLOWED_EMAIL = 'pureanae@gmail.com';
+const ALLOWED_EMAILS = [
+  'pureanae@gmail.com',
+  'alexanderholam@gmail.com'
+];
 
 function hideLoading() { document.getElementById('loading-screen').style.display = 'none'; }
 function showAuthError(msg) { document.getElementById('auth-error').textContent = msg; }
