@@ -3,7 +3,7 @@
   :root {
     --black: #0f0f0f; --white: #ffffff; --gray-100: #f5f5f5;
     --gray-200: #e8e8e8; --gray-400: #aaaaaa; --gray-600: #666666;
-    --red: #c0392b; --green: #1a6644; --radius: 2px;
+    --red: #8a6f6f; --green: #666666; --radius: 2px;
     --muscle-light: #f4a261; --muscle-mid: #e76f51; --muscle-dark: #c1440e;
   }
   body { font-family: 'Space Grotesk', sans-serif; background: var(--white); color: var(--black); min-height: 100vh; font-size: 14px; line-height: 1.5; }
@@ -101,8 +101,12 @@
   .hero-label { font-size: 13px; color: var(--gray-600); font-weight: 400; padding-bottom: 14px; line-height: 1.4; }
   .hero-label span { display: block; color: var(--gray-400); }
   .hero-label .hero-unit { font-size: 13px; color: var(--gray-600); }
+  .balance-breakdown { margin: 0 0 32px; padding-bottom: 24px; border-bottom: 1px solid var(--gray-200); max-width: 360px; }
+  .balance-line { display: flex; justify-content: space-between; gap: 24px; font-size: 12px; line-height: 1.9; }
+  .balance-line span:first-child { color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; font-weight: 600; }
+  .balance-line span:last-child { color: var(--gray-600); font-weight: 500; }
 
-  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 8px 0 32px; }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0 0 32px; }
   .stat-box { padding: 16px 0; border-right: 1px solid var(--gray-200); padding-right: 20px; margin-right: 20px; }
   .stat-box:last-child { border-right: none; margin-right: 0; padding-right: 0; }
   .stat-value { font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
@@ -118,6 +122,10 @@
   .session-date-block { min-width: 48px; text-align: center; }
   .session-day { font-size: 22px; font-weight: 700; line-height: 1; }
   .session-month { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gray-400); }
+  .session-status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .session-status-dot.completed-dot { background: var(--black); }
+  .session-status-dot.booked-dot { background: var(--gray-400); }
+  .session-status-dot.cancelled-dot { background: var(--red); }
   .session-info { flex: 1; }
   .session-time { font-size: 13px; font-weight: 500; }
   .session-notes { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
@@ -185,12 +193,13 @@
   .package-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
   .package-meta { font-size: 12px; color: var(--gray-400); line-height: 1.8; }
 
-  .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .calendar-header { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 18px; }
   .calendar-month-label { font-family: inherit; font-size: 14px; font-weight: 600; color: var(--black); background: transparent; border: none; cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 6px; }
   .calendar-month-label::after { content: "\25BE"; font-size: 10px; color: var(--gray-400); line-height: 1; transform: translateY(1px); }
   .calendar-month-label:hover::after { color: var(--gray-600); }
   .calendar-month-label:focus { outline: none; }
   .calendar-month-label:focus-visible { outline: 1px solid var(--gray-200); outline-offset: 4px; }
+  .calendar-nav-actions { display: flex; align-items: center; justify-content: center; gap: 22px; }
   .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--gray-200); border: 1px solid var(--gray-200); }
   .calendar-day-header { background: var(--white); text-align: center; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); padding: 8px 0; }
   .calendar-cell { background: var(--white); min-height: 64px; padding: 6px; cursor: pointer; transition: background 0.1s; }
@@ -199,9 +208,14 @@
   .calendar-cell.today .cell-num { background: var(--black); color: var(--white); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
   .cell-num { font-size: 12px; font-weight: 500; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
   .cell-dot { width: 5px; height: 5px; border-radius: 50%; margin: 2px auto 0; }
-  .cell-dot.completed-dot { background: var(--gray-400); }
-  .cell-dot.booked-dot { background: #32D74B; }
-  .cell-dot.cancelled-dot { background: #FF453A; }
+  .cell-dot.completed-dot { background: var(--black); }
+  .cell-dot.booked-dot { background: var(--gray-400); }
+  .cell-dot.cancelled-dot { background: var(--red); }
+  .calendar-legend { margin-top:16px; display:flex; gap:16px; flex-wrap:wrap; font-size:11px; color:var(--gray-400); }
+  .legend-dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:6px; transform:translateY(-1px); }
+  .legend-dot.completed-dot { background: var(--black); }
+  .legend-dot.booked-dot { background: var(--gray-400); }
+  .legend-dot.cancelled-dot { background: var(--red); }
   .empty-state { padding: 32px 24px; text-align: center; color: var(--gray-400); }
   .empty-state-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--gray-600); }
   .empty-state-sub { font-size: 12px; }
@@ -307,7 +321,7 @@
   .bottom-sheet {
     position: fixed; top: 8vh; bottom: 8vh; left: 0; right: 0;
     background: var(--white); max-width: 640px; margin: 0 auto;
-    border-radius: 16px;
+    border-radius: var(--radius);
     display: flex; flex-direction: column; overflow: hidden;
     z-index: 1001;
     animation: slideUp 0.25s ease forwards;
@@ -327,7 +341,7 @@
   .picker-cat {
     flex-shrink: 0; padding: 5px 12px; font-size: 11px; font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
-    border: 1px solid var(--gray-200); border-radius: 20px; background: none;
+    border: 1px solid var(--gray-200); border-radius: var(--radius); background: none;
     color: var(--gray-600); font-family: inherit; transition: all 0.15s; white-space: nowrap;
   }
   .picker-cat:hover { border-color: var(--black); color: var(--black); }
@@ -386,16 +400,12 @@
   .cx-adjust-btn:hover { border-color: var(--black); color: var(--black); }
   .cx-volume { font-size: 12px; color: var(--gray-400); margin-top: 14px; }
 
-  /* SESSION VIEW - MUSCLE HIGHLIGHTER */
+  /* SESSION DETAIL */
   .session-detail-wrap { padding: 0; }
-  .session-muscle-header { background: #111; color: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; overflow: hidden; }
-  .muscle-bodies { display: flex; justify-content: center; gap: 0; margin: 8px auto; max-width: 260px; }
-  .muscle-bodies svg { flex: 1; }
-  .session-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); }
-  .session-stat { text-align: center; padding: 0 8px; border-right: 1px solid rgba(255,255,255,0.1); }
+  .session-stat { text-align: center; padding: 14px 8px; border-right: 1px solid var(--gray-200); }
   .session-stat:last-child { border-right: none; }
-  .session-stat-val { font-size: 22px; font-weight: 700; color: white; line-height: 1; }
-  .session-stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.4); margin-top: 3px; }
+  .session-stat-val { font-size: 22px; font-weight: 700; color: var(--black); line-height: 1; }
+  .session-stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gray-400); margin-top: 3px; }
 
   /* Exercise set badges */
   .ex-detail-card { padding: 12px 0; border-bottom: 1px solid var(--gray-100); }
@@ -405,11 +415,11 @@
   .set-badges { display: flex; flex-wrap: wrap; gap: 6px; }
   .set-badge {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    width: 52px; height: 52px; border-radius: 50%;
-    background: var(--muscle-light); color: white; font-weight: 700; font-size: 13px; line-height: 1;
+    width: 52px; height: 52px; border-radius: var(--radius);
+    background: var(--gray-100); color: var(--black); font-weight: 700; font-size: 13px; line-height: 1;
   }
-  .set-badge.intensity-2 { background: var(--muscle-mid); }
-  .set-badge.intensity-3 { background: var(--muscle-dark); }
+  .set-badge.intensity-2 { background: var(--gray-200); }
+  .set-badge.intensity-3 { background: var(--black); color: var(--white); }
   .set-badge-reps { font-size: 9px; font-weight: 500; opacity: 0.85; margin-top: 2px; }
 
   @media (max-width: 600px) {
