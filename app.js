@@ -348,22 +348,21 @@ window.showView = function(name) {
 function renderDashboard() {
   const pkg = getActivePackage();
   const stats = getPackageStats(pkg);
-  const now = new Date();
-  const upcoming = state.sessions
-    .filter(s => s.status === 'booked' && new Date(s.datetime) >= now)
+  const bookedSessions = state.sessions
+    .filter(s => s.status === 'booked')
     .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
-  const bookedHours = upcoming.reduce((sum, s) => sum + (parseFloat(s.duration) || 1.0), 0);
+  const bookedHours = bookedSessions.reduce((sum, s) => sum + (parseFloat(s.duration) || 1.0), 0);
   const booked = Math.round(bookedHours * 10) / 10;
   const available = Math.round(Math.max(0, stats.remaining - bookedHours) * 10) / 10;
   const bookedSegment = Math.min(booked, Math.max(0, stats.total - stats.completed));
 
   document.getElementById('hero-remaining').textContent = pkg ? formatHours(stats.remaining) : '—';
   document.getElementById('hero-package-name').textContent = pkg ? pkg.name : 'No active package';
-  document.getElementById('balance-booked-label').textContent = `Booked sessions (${upcoming.length})`;
+  document.getElementById('balance-booked-label').textContent = `Booked sessions (${bookedSessions.length})`;
   document.getElementById('balance-booked-hours').textContent = `${formatHours(booked)} hrs`;
   document.getElementById('balance-available-hours').textContent = `${formatHours(available)} hrs`;
   document.getElementById('stat-completed').textContent = formatHours(stats.completed);
-  document.getElementById('stat-upcoming').textContent = upcoming.length;
+  document.getElementById('stat-upcoming').textContent = bookedSessions.length;
   document.getElementById('stat-available').textContent = formatHours(available);
   const progressSection = document.getElementById('progress-section');
   if (pkg && stats.total > 0) {
@@ -373,8 +372,8 @@ function renderDashboard() {
     document.getElementById('progress-booked').style.width = (bookedSegment / stats.total) * 100 + '%';
     document.getElementById('progress-available').style.width = (available / stats.total) * 100 + '%';
   } else { progressSection.style.display = 'none'; }
-  const visibleUpcoming = upcoming.slice(0, 5);
-  document.getElementById('upcoming-list').innerHTML = upcoming.length === 0
+  const visibleUpcoming = bookedSessions.slice(0, 5);
+  document.getElementById('upcoming-list').innerHTML = bookedSessions.length === 0
     ? `<div class="empty-state"><div class="empty-state-title">No upcoming sessions</div></div>`
     : visibleUpcoming.map(sessionCardHTML).join('');
   const thirtyDaysAgo = new Date();
