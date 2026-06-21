@@ -131,14 +131,38 @@ function getActivePackage() { return state.packages.find(p => p.active) || state
 function formatHours(value) { return (Math.round((value || 0) * 10) / 10).toFixed(1); }
 function formatStatHours(value) { return `${formatHours(value)}<span class="stat-unit">hrs</span>`; }
 function formatToday(monthStyle = 'long') { return new Date().toLocaleDateString('en', { month: monthStyle, day: 'numeric', year: 'numeric' }); }
+function escapeHTML(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[char]));
+}
+function formatPackageDate(value) {
+  if (!value) return 'Not set';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not set';
+  return date.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function formatCurrency(value) {
+  const amount = Number(value) || 0;
+  return `HKD ${Math.round(amount).toLocaleString()}`;
+}
 function getPackageStats(pkg) {
-  if (!pkg) return { total: 0, completed: 0, remaining: 0 };
+  if (!pkg) return { total: 0, completed: 0, booked: 0, available: 0, remaining: 0 };
   const completedHrs = state.sessions
-    .filter(s => s.packageId === pkg.id && s.status === 'completed')
+    .filter(s => s.packageId === pkg.id && (s.type || 'pt') === 'pt' && s.status === 'completed')
+    .reduce((sum, s) => sum + (parseFloat(s.duration) || 1.0), 0);
+  const bookedHrs = state.sessions
+    .filter(s => s.packageId === pkg.id && (s.type || 'pt') === 'pt' && s.status === 'booked')
     .reduce((sum, s) => sum + (parseFloat(s.duration) || 1.0), 0);
   const total = parseFloat(pkg.sessions) || 0;
   const completed = Math.round(completedHrs * 10) / 10;
-  return { total, completed, remaining: Math.round(Math.max(0, total - completedHrs) * 10) / 10 };
+  const booked = Math.round(bookedHrs * 10) / 10;
+  const available = Math.round(Math.max(0, total - completedHrs - bookedHrs) * 10) / 10;
+  return {
+    total,
+    completed,
+    booked,
+    available,
+    remaining: Math.round(Math.max(0, total - completedHrs) * 10) / 10
+  };
 }
 
 // ===== VIEWS =====
@@ -146,7 +170,7 @@ window.showView = function(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  ['dashboard','calendar','log'].forEach((t, i) => {
+  ['dashboard','calendar','log','packages'].forEach((t, i) => {
     if (t === name) document.querySelectorAll('.nav-tab')[i].classList.add('active');
   });
   if (name === 'dashboard') renderDashboard();
@@ -163,7 +187,9 @@ function renderDashboard() {
     getPackageStats,
     formatHours,
     formatStatHours,
-    formatToday
+    formatToday,
+    formatPackageDate,
+    formatCurrency
   });
 }
 
@@ -180,15 +206,15 @@ function renderCalendar() {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = today.getFullYear()===year && today.getMonth()===month && today.getDate()===d;
     const daySessions = state.sessions.filter(s => s.datetime?.startsWith(dateStr));
-    const dots = daySessions.map(s => `<div class="cell-dot ${calendarDotClass(s)}"></div>`).join('');
+    const dots = daySessions.map(s => `<div class="event-dot cell-dot ${calendarDotClass(s)}"></div>`).join('');
     html += `<div class="calendar-cell ${isToday?'today':''}" onclick="calCellClick('${dateStr}')"><div class="cell-num">${d}</div>${dots}</div>`;
   }
   document.getElementById('calendar-grid').innerHTML = html;
 }
 function calendarDotClass(s) {
-  if (s.status === 'cancelled') return 'cancelled-dot';
-  if (s.status === 'completed') return 'completed-dot';
-  return 'booked-dot';
+  const status = s.status === 'cancelled' ? 'cancelled' : s.status === 'completed' ? 'completed' : 'upcoming';
+  const type = s.type === 'personal' ? 'personal' : 'pt';
+  return `status-${status} event-type-${type}`;
 }
 window.changeMonth = function(dir) {
   state.calendarMonth += dir;
@@ -231,35 +257,125 @@ function renderLog() {
 // ===== PACKAGES =====
 function renderPackages() {
   if (!state.packages.length) {
-    document.getElementById('packages-list').innerHTML = `<div class="empty-state"><div class="empty-state-title">No packages yet</div></div>`;
+    document.getElementById('packages-list').innerHTML = `<div class="empty-state package-empty">
+      <div class="empty-state-title">No packages yet</div>
+      <button class="btn btn-primary btn-sm" onclick="openPackageModal()">+ New Package</button>
+    </div>`;
     return;
   }
-  document.getElementById('packages-list').innerHTML = [...state.packages].reverse().map(pkg => {
-    const stats = getPackageStats(pkg);
-    const costPer = pkg.cost && pkg.sessions ? Math.round(pkg.cost/pkg.sessions * 10) / 10 : null;
-    const dateStr = new Date(pkg.date).toLocaleDateString('en', { day:'numeric', month:'short', year:'numeric' });
-    const pct = stats.total > 0 ? Math.round(stats.completed/stats.total*100) : 0;
-    return `<div class="package-card ${pkg.active?'active-package':''}">
-      ${pkg.active ? '<div class="package-active-tag">Active</div>' : ''}
-      <div class="package-name">${pkg.name}</div>
-      <div class="package-meta">
-        Purchased: ${dateStr}<br>
-        Hours: ${stats.completed} done / ${stats.total} total hrs<br>
-        ${pkg.cost ? `Cost: HKD ${Number(pkg.cost).toLocaleString()}${costPer ? ` (HKD ${costPer}/hr)` : ''}` : ''}
-        ${pkg.pt ? `<br>Trainer: ${pkg.pt}` : ''}
-        ${pkg.notes ? `<br>${pkg.notes}` : ''}
+  const active = getActivePackage();
+  const pastPackages = [...state.packages]
+    .filter(pkg => pkg.id !== active?.id)
+    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+  document.getElementById('packages-list').innerHTML = `
+    ${active ? renderActivePackage(active) : ''}
+    <div class="package-history">
+      <div class="package-section-label">Past Packages</div>
+      ${pastPackages.length
+        ? pastPackages.map(renderPastPackage).join('')
+        : '<div class="package-muted">No past packages yet</div>'}
+    </div>`;
+}
+
+function getPackageFinancials(pkg, stats) {
+  const totalCost = Number(pkg.cost) || 0;
+  const average = stats.total > 0 ? totalCost / stats.total : 0;
+  return {
+    average,
+    used: average * stats.completed,
+    booked: average * stats.booked,
+    available: average * stats.available
+  };
+}
+
+function renderPackageRow(label, value) {
+  return `<div class="package-ledger-row"><span>${label}</span><span>${value}</span></div>`;
+}
+
+function renderActivePackage(pkg) {
+  const stats = getPackageStats(pkg);
+  const money = getPackageFinancials(pkg, stats);
+  const average = money.average ? `${formatCurrency(money.average)} / hr` : 'Not set';
+  return `<section class="package-active">
+    <div class="package-section-label">Active Package</div>
+    <div class="package-primary-row">
+      <div>
+        <div class="package-name">${escapeHTML(pkg.name || `${formatHours(stats.total)} hrs Package`)}</div>
+        <div class="package-subline">${formatHours(stats.total)} hrs purchased</div>
       </div>
-      <div style="margin-top:12px;">
-        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray-400);margin-top:4px;"><span>${stats.remaining} hrs remaining</span><span>${pct}%</span></div>
+      <div class="package-status">Active</div>
+    </div>
+    <div class="package-ledger">
+      ${renderPackageRow('Total Purchased Hours', `${formatHours(stats.total)} hrs`)}
+      ${renderPackageRow('Purchased', formatPackageDate(pkg.date))}
+      ${renderPackageRow('Expires', formatPackageDate(pkg.expiry))}
+      ${renderPackageRow('Payment', escapeHTML(pkg.payment || 'Not set'))}
+      ${renderPackageRow('Total Cost', pkg.cost ? formatCurrency(pkg.cost) : 'Not set')}
+      ${renderPackageRow('Average Cost', average)}
+    </div>
+    <div class="package-columns">
+      <div>
+        <div class="package-section-label">Usage</div>
+        <div class="package-ledger">
+          ${renderPackageRow('Completed', `${formatHours(stats.completed)} hrs`)}
+          ${renderPackageRow('Booked', `${formatHours(stats.booked)} hrs`)}
+          ${renderPackageRow('Available', `${formatHours(stats.available)} hrs`)}
+          ${renderPackageRow('Remaining', `${formatHours(stats.remaining)} hrs`)}
+        </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:16px;">
-        ${!pkg.active ? `<button class="btn btn-outline btn-sm" onclick="setActivePackage('${pkg.id}')">Set Active</button>` : ''}
+      <div>
+        <div class="package-section-label">Value</div>
+        <div class="package-ledger">
+          ${renderPackageRow('Value Used', formatCurrency(money.used))}
+          ${renderPackageRow('Value Booked', formatCurrency(money.booked))}
+          ${renderPackageRow('Value Available', formatCurrency(money.available))}
+        </div>
+      </div>
+    </div>
+    <div class="package-actions">
+      <button class="btn btn-ghost btn-sm" onclick="deletePackage('${pkg.id}')">Delete</button>
+    </div>
+  </section>`;
+}
+
+function renderPastPackage(pkg) {
+  const stats = getPackageStats(pkg);
+  const money = getPackageFinancials(pkg, stats);
+  const average = money.average ? `${formatCurrency(money.average)} / hr` : 'Not set';
+  return `<div class="package-history-item" id="package-${pkg.id}">
+    <button class="package-history-row" type="button" onclick="togglePackageDetails('${pkg.id}')">
+      <span>${escapeHTML(pkg.name || `${formatHours(stats.total)} hrs Package`)}</span>
+      <span>${formatPackageDate(pkg.date)}</span>
+      <span>${formatHours(stats.remaining)} hrs remaining</span>
+    </button>
+    <div class="package-history-detail">
+      <div class="package-ledger">
+        ${renderPackageRow('Total Purchased Hours', `${formatHours(stats.total)} hrs`)}
+        ${renderPackageRow('Purchased', formatPackageDate(pkg.date))}
+        ${renderPackageRow('Expires', formatPackageDate(pkg.expiry))}
+        ${renderPackageRow('Payment', escapeHTML(pkg.payment || 'Not set'))}
+        ${renderPackageRow('Total Cost', pkg.cost ? formatCurrency(pkg.cost) : 'Not set')}
+        ${renderPackageRow('Average Cost', average)}
+        ${renderPackageRow('Completed', `${formatHours(stats.completed)} hrs`)}
+        ${renderPackageRow('Booked', `${formatHours(stats.booked)} hrs`)}
+        ${renderPackageRow('Available', `${formatHours(stats.available)} hrs`)}
+        ${renderPackageRow('Remaining', `${formatHours(stats.remaining)} hrs`)}
+        ${renderPackageRow('Value Used', formatCurrency(money.used))}
+        ${renderPackageRow('Value Booked', formatCurrency(money.booked))}
+        ${renderPackageRow('Value Available', formatCurrency(money.available))}
+      </div>
+      <div class="package-actions">
+        <button class="btn btn-outline btn-sm" onclick="setActivePackage('${pkg.id}')">Set Active</button>
         <button class="btn btn-ghost btn-sm" onclick="deletePackage('${pkg.id}')">Delete</button>
       </div>
-    </div>`;
-  }).join('');
+    </div>
+  </div>`;
 }
+
+window.togglePackageDetails = function(id) {
+  document.getElementById(`package-${id}`)?.classList.toggle('open');
+};
 
 // ===== EXERCISE PICKER =====
 window.openExercisePicker = function(context) {
@@ -564,7 +680,11 @@ window.adjustFocusedWeight = function(delta) {
 
 // ===== PACKAGES =====
 window.openPackageModal = function() {
-  document.getElementById('pkg-date').value = new Date().toISOString().split('T')[0];
+  const today = new Date();
+  const expiry = new Date(today);
+  expiry.setMonth(expiry.getMonth() + 6);
+  document.getElementById('pkg-date').value = today.toISOString().split('T')[0];
+  document.getElementById('pkg-expiry').value = expiry.toISOString().split('T')[0];
   openModal('package-modal');
 };
 window.savePackage = async function() {
@@ -574,10 +694,20 @@ window.savePackage = async function() {
   if (!name || !sessions || !date) { showToast('Please fill in name, date, and total hours'); return; }
   await Promise.all(state.packages.filter(p => p.active).map(p => fsSet('packages', p.id, {...p, active:false})));
   const id = genId();
-  await fsSet('packages', id, { name, date, sessions, cost: document.getElementById('pkg-cost').value||null, pt: document.getElementById('pkg-pt').value||null, notes: document.getElementById('pkg-notes').value||null, active: true });
+  await fsSet('packages', id, {
+    name,
+    date,
+    expiry: document.getElementById('pkg-expiry').value || null,
+    sessions,
+    cost: document.getElementById('pkg-cost').value || null,
+    payment: document.getElementById('pkg-payment').value.trim() || null,
+    pt: document.getElementById('pkg-pt').value || null,
+    notes: document.getElementById('pkg-notes').value || null,
+    active: true
+  });
   closeModal('package-modal');
   showToast('Package saved & set as active');
-  ['pkg-name','pkg-sessions','pkg-cost','pkg-pt','pkg-notes'].forEach(i => document.getElementById(i).value='');
+  ['pkg-name','pkg-sessions','pkg-cost','pkg-payment','pkg-pt','pkg-notes'].forEach(i => document.getElementById(i).value='');
 };
 window.setActivePackage = async function(id) {
   await Promise.all(state.packages.map(p => fsSet('packages', p.id, {...p, active: p.id===id})));
