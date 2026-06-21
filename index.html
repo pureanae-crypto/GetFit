@@ -59,9 +59,10 @@
 <!-- DASHBOARD -->
 <div id="view-dashboard" class="view active">
   <div class="section-label">Session Balance</div>
+  <div class="balance-as-of" id="balance-as-of">As of Jun 21, 2026</div>
   <div class="hero-counter">
     <div class="hero-number" id="hero-remaining">—</div>
-    <div class="hero-label">hrs remaining<span id="hero-package-name">No active package</span></div>
+    <div class="hero-label"><span class="hero-unit">hrs</span><span>remaining</span></div>
   </div>
   <div class="balance-breakdown">
     <div class="balance-line"><span id="balance-booked-label">Booked sessions (0)</span><span id="balance-booked-hours">0 hrs</span></div>
@@ -84,7 +85,6 @@
   </div>
   <div class="section-label">Upcoming Sessions</div>
   <div id="upcoming-list"></div>
-  <button class="btn btn-primary" onclick="openBookModal()" style="margin-top:16px;">+ Book Session</button>
   <hr style="border:none; border-top:1px solid var(--gray-200); margin:32px 0;">
   <div class="section-label">Recently Completed</div>
   <div id="recent-completed-list"></div>
