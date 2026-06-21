@@ -17,7 +17,7 @@ export function installSessionHandlers(context) {
   window.exportICS = exportICS;
 }
 
-export function sessionCardHTML(s) {
+export function sessionCardHTML(s, options = {}) {
   const dt = new Date(s.datetime);
   const day = dt.getDate();
   const month = dt.toLocaleString('en', { month: 'short' }).toUpperCase();
@@ -29,7 +29,8 @@ export function sessionCardHTML(s) {
   const actions = s.status === 'booked'
     ? `<button class="btn btn-ghost btn-sm" onclick="openCompleteModal('${s.id}')">✓ Complete</button>
        <button class="btn btn-ghost btn-sm" onclick="openEditModal('${s.id}')">Edit</button>
-       <button class="btn btn-ghost btn-sm" onclick="exportSingleICS('${s.id}')">↓ .ics</button>`
+       <button class="btn btn-ghost btn-sm" onclick="exportSingleICS('${s.id}')">↓ .ics</button>
+       ${options.showDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>` : ''}`
     : `<button class="btn btn-ghost btn-sm" onclick="openViewModal('${s.id}')">View</button>`;
   return `<div class="session-card ${s.status === 'completed' ? 'completed' : ''}">
     <div class="session-date-block"><div class="session-day">${day}</div><div class="session-month">${month}</div></div>
@@ -115,7 +116,7 @@ async function saveSession() {
   };
   await ctx.fsSet('sessions', id, sessionData);
   ctx.closeModal('book-modal');
-  ctx.showToast(currentEditId ? 'Session updated' : 'Session booked');
+  ctx.showToast(currentEditId ? 'Session updated' : 'Session scheduled');
 };
 
 // ===== COMPLETE =====

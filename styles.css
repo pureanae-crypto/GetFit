@@ -90,6 +90,8 @@
     font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
     color: var(--gray-400); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200);
   }
+  .view-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--gray-200); padding-bottom: 8px; }
+  .view-title-row .section-label { margin: 0; padding: 0; border: none; }
 
   .balance-as-of {
     margin-top: -8px; font-size: 11px; color: var(--gray-400); letter-spacing: 0.02em;
@@ -329,4 +331,5 @@
     .nav-tab { padding: 6px 10px; font-size: 11px; }
     .session-card { flex-wrap: wrap; }
     .bottom-sheet { max-height: 92vh; }
+    .view-title-row { align-items: flex-start; }
   }
