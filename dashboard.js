@@ -14,10 +14,7 @@ export function renderDashboard(ctx) {
 
   document.getElementById('hero-remaining').textContent = pkg ? ctx.formatHours(stats.remaining) : '-';
   document.getElementById('balance-as-of').textContent = `As of ${ctx.formatToday('short')}`;
-  document.getElementById('balance-booked-label').textContent = `Upcoming sessions (${bookedSessions.length})`;
-  document.getElementById('balance-booked-hours').textContent = `${ctx.formatHours(booked)} hrs`;
-  document.getElementById('balance-available-hours').textContent = `${ctx.formatHours(available)} hrs`;
-  document.getElementById('stat-completed').innerHTML = ctx.formatStatHours(stats.completed);
+document.getElementById('stat-completed').innerHTML = ctx.formatStatHours(stats.completed);
   document.getElementById('stat-upcoming').innerHTML = ctx.formatStatHours(booked);
   document.getElementById('stat-available').innerHTML = ctx.formatStatHours(available);
 
