@@ -46,7 +46,6 @@ export function renderLog(renderCtx) {
   const filtered = filterSessionsByBodyPart(typeFiltered, logBodyFilter);
   const buckets = buildTrendBuckets(filtered, logTrendMode, logBodyFilter);
   const currentBucket = buckets[buckets.length - 1] || { volume: 0, sessions: 0 };
-  const comparison = trendComparisonHTML(buckets, logTrendMode);
   const distribution = buildBodyPartDistribution(filtered);
   const summaryRows = distribution.length
     ? distribution.map(item => `
@@ -92,7 +91,6 @@ export function renderLog(renderCtx) {
     <section class="log-analytics">
       <div class="log-metric-label">Volume</div>
       <div class="log-metric-value">${formatVolume(currentBucket.volume)} kg <span>${trendMetricSuffix(logTrendMode, currentBucket.sessions)}</span></div>
-      ${comparison}
       ${trendChartHTML(buckets, logTrendMode)}
       <div class="log-body-summary">${summaryRows}</div>
     </section>
@@ -231,42 +229,78 @@ function buildBodyPartDistribution(sessions) {
     .sort((a, b) => b.volume - a.volume);
 }
 
-function bestLift(sessions) {
-  let best = null;
+function liftStats(sessions) {
+  const lifts = [];
   sessions.forEach(session => (session.exercises || []).forEach(exercise => {
     if (isCardioExercise(exercise)) return;
     getExerciseSets(exercise).forEach(set => {
-      if (!best || set.weight > best.weight) best = { name: exercise.name || 'Lift', weight: set.weight };
+      lifts.push({ name: exercise.name || 'Lift', weight: set.weight });
     });
   }));
-  return best;
+  lifts.sort((a, b) => b.weight - a.weight);
+  const best = lifts[0] || null;
+  const previousBest = best ? lifts.find(lift => lift.weight < best.weight) : null;
+  return { best, previousBest };
+}
+
+function mutedComparisonHTML(text, tone = 'neutral') {
+  const color = tone === 'up' ? '#4d8b5c' : tone === 'down' ? '#b06a6a' : 'var(--gray-500)';
+  return `<div style="font-size:11px;font-weight:500;line-height:1.25;color:${color};letter-spacing:0;margin-top:4px;">${text}</div>`;
+}
+
+function differenceHTML(current, previous, label) {
+  const diff = current - previous;
+  if (!previous && !current) return mutedComparisonHTML(`No ${label} yet`);
+  if (!previous) return mutedComparisonHTML(`↑ ${formatVolume(Math.abs(diff))} ${label}`, 'up');
+  if (Math.round(diff) === 0) return mutedComparisonHTML(`→ no change ${label}`);
+  const isUp = diff > 0;
+  const value = `${Math.round(Math.abs(diff) / previous * 100)}%`;
+  return mutedComparisonHTML(`${isUp ? '↑' : '↓'} ${value} ${label}`, isUp ? 'up' : 'down');
 }
 
 function highlightsHTML(sessions) {
-  const best = bestLift(sessions);
+  const { best, previousBest } = liftStats(sessions);
   const now = new Date();
   const sevenDaysAgo = new Date(now);
   sevenDaysAgo.setDate(now.getDate() - 6);
+  const previousSevenDaysAgo = new Date(sevenDaysAgo);
+  previousSevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const recentVolume = sessions
     .filter(session => startOfDay(new Date(session.completedAt || session.datetime)) >= startOfDay(sevenDaysAgo))
     .reduce((sum, session) => sum + getSessionVolume(session), 0);
+  const previousVolume = sessions
+    .filter(session => {
+      const date = startOfDay(new Date(session.completedAt || session.datetime));
+      return date >= startOfDay(previousSevenDaysAgo) && date < startOfDay(sevenDaysAgo);
+    })
+    .reduce((sum, session) => sum + getSessionVolume(session), 0);
   const weekStart = startOfWeek(now);
+  const lastWeekStart = new Date(weekStart);
+  lastWeekStart.setDate(weekStart.getDate() - 7);
   const weekSessions = sessions.filter(session => startOfDay(new Date(session.completedAt || session.datetime)) >= weekStart).length;
+  const lastWeekSessions = sessions.filter(session => {
+    const date = startOfDay(new Date(session.completedAt || session.datetime));
+    return date >= lastWeekStart && date < weekStart;
+  }).length;
+  const bestComparison = best && previousBest
+    ? mutedComparisonHTML(`↑ ${formatVolume(best.weight - previousBest.weight)} kg vs previous best`, 'up')
+    : mutedComparisonHTML(best ? 'Current best' : 'No lifts yet');
   return `<section style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--gray-200);border-bottom:1px solid var(--gray-200);margin:-6px 0 28px;">
     <div style="padding:12px 18px 12px 0;border-right:1px solid var(--gray-200);">
       <div class="log-metric-label">Best Lift</div>
       <div style="font-size:16px;font-weight:600;line-height:1.2;">${best ? `${formatVolume(best.weight)} kg` : '-'}</div>
       <div class="log-muted">${best ? escapeHTML(best.name) : 'No lifts yet'}</div>
+      ${bestComparison}
     </div>
     <div style="padding:12px 18px;border-right:1px solid var(--gray-200);">
       <div class="log-metric-label">7-Day Volume</div>
       <div style="font-size:16px;font-weight:600;line-height:1.2;">${formatVolume(recentVolume)} kg</div>
-      <div class="log-muted">Latest 7 days</div>
+      ${differenceHTML(recentVolume, previousVolume, 'vs previous 7 days')}
     </div>
     <div style="padding:12px 0 12px 18px;">
       <div class="log-metric-label">This Week</div>
       <div style="font-size:16px;font-weight:600;line-height:1.2;">${pluralize(weekSessions, 'workout')}</div>
-      <div class="log-muted">Since Monday</div>
+      ${differenceHTML(weekSessions, lastWeekSessions, 'vs last week')}
     </div>
   </section>`;
 }
@@ -312,36 +346,6 @@ function trendMetricSuffix(mode, sessions = 0) {
   if (mode === 'daily') return 'today';
   if (mode === 'monthly') return 'this month';
   return `this week · ${pluralize(sessions, 'workout')}`;
-}
-
-function comparisonLabel(mode) {
-  if (mode === 'daily') return 'vs recent avg';
-  if (mode === 'monthly') return 'vs last month';
-  return 'vs last week';
-}
-
-function trendComparisonHTML(buckets, mode) {
-  const current = buckets[buckets.length - 1];
-  if (!current) return '';
-  const previousValues = mode === 'daily'
-    ? buckets.slice(0, -1).map(bucket => bucket.volume)
-    : [buckets[buckets.length - 2]?.volume || 0];
-  const previous = previousValues.length
-    ? previousValues.reduce((sum, value) => sum + value, 0) / previousValues.length
-    : 0;
-  const diff = current.volume - previous;
-  const label = comparisonLabel(mode);
-  const baseStyle = 'font-size:11px;font-weight:500;margin-top:4px;letter-spacing:0;';
-  if (!previous && !current.volume) {
-    return `<div style="${baseStyle}color:var(--gray-500);">No comparison yet</div>`;
-  }
-  if (Math.round(diff) === 0) {
-    return `<div style="${baseStyle}color:var(--gray-500);">→ no change ${label}</div>`;
-  }
-  const isUp = diff > 0;
-  const value = previous ? `${Math.round(Math.abs(diff) / previous * 100)}%` : `${formatVolume(Math.abs(diff))} kg`;
-  const color = isUp ? '#4d8b5c' : '#b06a6a';
-  return `<div style="${baseStyle}color:${color};">${isUp ? '↑' : '↓'} ${value} ${label}</div>`;
 }
 
 function buildTrendBuckets(sessions, mode, bodyPart) {
