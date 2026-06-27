@@ -223,7 +223,7 @@ function getExerciseRows(containerId) {
     if (!name || name === 'Choose exercise') return acc;
     if (kind) {
       const metric = key => card.querySelector(`[data-metric="${key}"]`)?.value.trim() || '';
-      acc.push({ name, muscles, cardio: kind, speed: metric('speed'), time: metric('time'), elevation: metric('elevation'), level: metric('level') });
+      acc.push({ name, muscles, cardio: kind, sets: [], speed: metric('speed'), time: metric('time'), elevation: metric('elevation'), level: metric('level') });
     } else {
       const inputs = card.querySelectorAll('input');
       acc.push({ name, sets: inputs[0]?.value.trim(), reps: inputs[1]?.value.trim(), weight: inputs[2]?.value.trim(), muscles });
@@ -353,6 +353,7 @@ function getCxExercises() {
       return {
         name,
         cardio: kind,
+        sets: [],
         speed: block.querySelector('.cx-cardio-speed')?.value || '',
         time: block.querySelector('.cx-cardio-time')?.value || '',
         elevation: block.querySelector('.cx-cardio-elevation')?.value || '',
