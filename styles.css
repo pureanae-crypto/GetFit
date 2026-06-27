@@ -749,6 +749,20 @@
     font-size: 14px;
     color: var(--text-secondary);
   }
+  .insight-load-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 5px 8px;
+    line-height: 1.45;
+  }
+  .insight-load {
+    white-space: nowrap;
+  }
+  .insight-load-row .insight-comparison {
+    white-space: nowrap;
+    font-weight: 650;
+  }
   .insight-comparison.up { color: var(--green); }
   .insight-comparison.down { color: var(--red); }
   .insight-comparison.neutral { color: var(--text-muted); }

@@ -56,10 +56,16 @@ export function renderDashboard(ctx) {
       <div class="upcoming-actions"><button class="btn btn-primary" onclick="openBookModal()">+ Book PT Session</button></div>`;
 
   const insight = buildWeeklyInsight(ctx.state.sessions);
+  const insightCopy = insight.loadText
+    ? `<div class="insight-copy insight-load-row">
+        <span class="insight-load">${insight.loadText}</span>
+        <span class="insight-comparison ${insight.changeTone}">${insight.changeText}</span>
+      </div>`
+    : `<div class="insight-copy">${insight.copy}</div>`;
   document.getElementById('weekly-insight').innerHTML = `
     <div class="section-label">Weekly Insight</div>
     <div class="insight-title">${insight.title}</div>
-    <div class="insight-copy">${insight.copy}</div>
+    ${insightCopy}
     <div class="insight-meta">${insight.meta}</div>`;
 
   const thirtyDaysAgo = new Date();
@@ -133,7 +139,9 @@ function buildWeeklyInsight(sessions) {
   const changeTone = lastVolume ? (change >= 0 ? 'up' : 'down') : 'neutral';
   return {
     title: `${thisWeek.length} workout${thisWeek.length === 1 ? '' : 's'} this week`,
-    copy: `${Math.round(volume).toLocaleString()} kg training load · <span class="insight-comparison ${changeTone}">${changeText}</span>`,
+    loadText: `${Math.round(volume).toLocaleString()} kg training load`,
+    changeText,
+    changeTone,
     meta: topMuscle ? `Most trained: ${topMuscle}` : 'Keep the rhythm steady.'
   };
 }
