@@ -254,8 +254,7 @@ function liftStats(sessions) {
 }
 
 function mutedComparisonHTML(text, tone = 'neutral') {
-  const color = tone === 'up' ? '#4d8b5c' : tone === 'down' ? '#b06a6a' : 'var(--gray-500)';
-  return `<div style="font-size:11px;font-weight:500;line-height:1.25;color:${color};letter-spacing:0;margin-top:4px;">${text}</div>`;
+  return `<div class="log-comparison ${tone}">${text}</div>`;
 }
 
 function volumeDifferenceHTML(current, previous, label) {
@@ -302,21 +301,21 @@ function highlightsHTML(sessions) {
   const bestComparison = best && previousBest
     ? mutedComparisonHTML(`↑ ${formatVolume(best.weight - previousBest.weight)} kg vs previous best`, 'up')
     : mutedComparisonHTML(best ? 'Current best' : 'No lifts yet');
-  return `<section style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--gray-200);border-bottom:1px solid var(--gray-200);margin:-6px 0 28px;">
-    <div style="padding:12px 18px 12px 0;border-right:1px solid var(--gray-200);">
+  return `<section class="log-highlights">
+    <div class="log-highlight-card">
       <div class="log-metric-label">Best Lift</div>
-      <div style="font-size:16px;font-weight:600;line-height:1.2;">${best ? `${formatVolume(best.weight)} kg` : '-'}</div>
+      <div class="log-highlight-value">${best ? `${formatVolume(best.weight)} kg` : '-'}</div>
       <div class="log-muted">${best ? escapeHTML(best.name) : 'No lifts yet'}</div>
       ${bestComparison}
     </div>
-    <div style="padding:12px 18px;border-right:1px solid var(--gray-200);">
+    <div class="log-highlight-card">
       <div class="log-metric-label">7-Day Volume</div>
-      <div style="font-size:16px;font-weight:600;line-height:1.2;">${formatVolume(recentVolume)} kg</div>
+      <div class="log-highlight-value">${formatVolume(recentVolume)} kg</div>
       ${volumeDifferenceHTML(recentVolume, previousVolume, 'vs previous 7 days')}
     </div>
-    <div style="padding:12px 0 12px 18px;">
+    <div class="log-highlight-card">
       <div class="log-metric-label">This Week</div>
-      <div style="font-size:16px;font-weight:600;line-height:1.2;">${pluralize(weekSessions, 'workout')}</div>
+      <div class="log-highlight-value">${pluralize(weekSessions, 'workout')}</div>
       ${sessionDifferenceHTML(weekSessions, lastWeekSessions, 'vs last week')}
     </div>
   </section>`;
