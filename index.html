@@ -49,6 +49,7 @@
     <button class="nav-tab" onclick="showView('calendar')">Calendar</button>
     <button class="nav-tab" onclick="showView('log')">Log</button>
     <button class="nav-tab" onclick="showView('packages')">Packages</button>
+    <button class="nav-tab" onclick="showView('guide')">Guide</button>
   </div>
   <div class="nav-user">
     <span class="nav-user-email" id="nav-user-email"></span>
@@ -157,6 +158,60 @@
     <button class="btn btn-primary btn-sm" onclick="openPackageModal()">+ New Package</button>
   </div>
   <div id="packages-list"></div>
+</div>
+
+<!-- GUIDE -->
+<div id="view-guide" class="view">
+  <div class="guide-page-head">
+    <div>
+      <div class="guide-title">Guide</div>
+      <div class="guide-subtitle">How to log clean data and read Training Load</div>
+    </div>
+  </div>
+
+  <div class="guide-grid">
+    <section class="guide-card guide-card-primary">
+      <div class="guide-kicker">Input</div>
+      <h2>Logging workouts</h2>
+      <p>Use one row per exercise. For strength work, enter weight in kg and reps for each set. When you add another set, the app repeats the last weight and reps so you can adjust only what changed.</p>
+      <p>For bodyweight movements like pull-ups, dips, push-ups, leg raises, planks, and sit-ups, leave weight empty unless extra load was added.</p>
+    </section>
+
+    <section class="guide-card">
+      <div class="guide-kicker">Metric</div>
+      <h2>Training Load</h2>
+      <p>Training Load estimates total strength demand across weighted and bodyweight exercises. It is used for mixed charts, weekly insight, and body-part distribution.</p>
+      <p>Traditional Volume remains useful for weighted exercise details where kg × reps is the clearest view.</p>
+    </section>
+
+    <section class="guide-card">
+      <div class="guide-kicker">Method</div>
+      <h2>Bodyweight estimates</h2>
+      <p>Mapped bodyweight exercises use a conservative bodyweight factor. For example, push-ups use part of bodyweight, while pull-ups use most of bodyweight.</p>
+      <p>These factors are directional. They help compare training trends, not measure exact force.</p>
+    </section>
+
+    <section class="guide-card">
+      <div class="guide-kicker">Method</div>
+      <h2>Muscle maps</h2>
+      <p>Each mapped exercise has primary muscles, secondary muscles, and a load split across involved muscle groups.</p>
+      <p>For unmapped exercises, the app infers a safe type and muscle split where possible, then logs an internal console warning for review.</p>
+    </section>
+
+    <section class="guide-card">
+      <div class="guide-kicker">Caveat</div>
+      <h2>Unilateral work</h2>
+      <p>Single-side movements such as split squats, lunges, cable kickbacks, and single-leg RDLs are flagged as unilateral.</p>
+      <p>The app preserves your current logging behavior and does not double-count unless future data clearly records both sides.</p>
+    </section>
+
+    <section class="guide-card">
+      <div class="guide-kicker">Cardio</div>
+      <h2>Separate from strength</h2>
+      <p>Cardio is tracked separately as cardio effort using duration and intensity inputs such as speed, level, or elevation.</p>
+      <p>Cardio does not contribute to strength muscle-load charts unless it is explicitly marked as conditioning in the data.</p>
+    </section>
+  </div>
 </div>
 
 <!-- BOOK MODAL -->

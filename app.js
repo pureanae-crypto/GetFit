@@ -44,7 +44,7 @@ window.showView = function(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  ['dashboard','calendar','log','packages'].forEach((viewName, i) => {
+  ['dashboard','calendar','log','packages','guide'].forEach((viewName, i) => {
     if (viewName === name) document.querySelectorAll('.nav-tab')[i].classList.add('active');
   });
   if (name === 'dashboard') renderDashboard();

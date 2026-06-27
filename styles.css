@@ -970,14 +970,61 @@
   .empty-state-sub { font-size: 14px; color: var(--text-secondary); }
 
   .log-title,
-  .packages-title {
+  .packages-title,
+  .guide-title {
     font-size: 28px;
     font-weight: 650;
     letter-spacing: 0;
     text-transform: none;
   }
   .log-subtitle,
-  .packages-subtitle { font-size: 14px; color: var(--text-muted); }
+  .packages-subtitle,
+  .guide-subtitle { font-size: 14px; color: var(--text-muted); }
+  .guide-page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: var(--space-7);
+  }
+  .guide-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .guide-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--white);
+    padding: var(--card-pad);
+  }
+  .guide-card-primary {
+    grid-column: 1 / -1;
+  }
+  .guide-kicker {
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .guide-card h2 {
+    font-size: 18px;
+    font-weight: 650;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+  .guide-card p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .guide-card p + p {
+    margin-top: 10px;
+  }
   .log-highlights {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1228,6 +1275,9 @@
     .bottom-sheet { top: 5vh; bottom: 5vh; }
     .view-title-row { align-items: flex-start; }
     .packages-page-head { align-items: flex-start; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+    .guide-page-head { align-items: flex-start; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+    .guide-grid { grid-template-columns: 1fr; }
+    .guide-card-primary { grid-column: auto; }
     .package-primary-row { flex-direction: column; gap: 8px; padding-bottom: 16px; }
     .package-columns { grid-template-columns: 1fr; gap: 24px; margin-top: 24px; }
     .package-history-row { grid-template-columns: 1fr; gap: 3px; padding: 13px 0; }
