@@ -14,9 +14,9 @@ export function renderDashboard(ctx) {
 
   document.getElementById('hero-remaining').textContent = pkg ? ctx.formatHours(stats.remaining) : '-';
   document.getElementById('balance-as-of').textContent = `As of ${ctx.formatToday('short')}`;
-  document.getElementById('today-focus').textContent = todaySession
-    ? `${formatSessionTime(todaySession)} · ${todaySession.duration || '1.0'} hr PT session`
-    : nextSessionText(bookedSessions[0]);
+  document.getElementById('today-focus').innerHTML = todaySession
+    ? todaySessionHTML(todaySession)
+    : nextSessionHTML(bookedSessions[0]);
   const balanceBreakdown = document.querySelector('.balance-breakdown');
   if (balanceBreakdown) balanceBreakdown.style.display = '';
   document.getElementById('balance-booked-count').textContent = `(${bookedSessions.length})`;
@@ -34,7 +34,10 @@ export function renderDashboard(ctx) {
     const usedPercent = Math.min(100, Math.round((stats.completed / stats.total) * 100));
     const bookedPercent = Math.min(100, Math.round((bookedSegment / stats.total) * 100));
     const availablePercent = Math.max(0, 100 - usedPercent - bookedPercent);
-    document.getElementById('progress-label').textContent = `${usedPercent}% completed · ${bookedPercent}% booked · ${availablePercent}% available`;
+    document.getElementById('progress-label').innerHTML = `
+      <span>${usedPercent}% completed</span>
+      <span>${bookedPercent}% booked</span>
+      <span>${availablePercent}% available</span>`;
     document.getElementById('progress-completed').style.width = Math.min(100, (stats.completed / stats.total) * 100) + '%';
     document.getElementById('progress-booked').style.width = (bookedSegment / stats.total) * 100 + '%';
     document.getElementById('progress-available').style.width = (available / stats.total) * 100 + '%';
@@ -79,11 +82,15 @@ function formatSessionTime(session) {
   return new Date(session.datetime).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
 }
 
-function nextSessionText(session) {
+function todaySessionHTML(session) {
+  return `<span class="today-focus-prefix">Today</span><span class="today-focus-main">${formatSessionTime(session)}</span><span class="today-focus-sub">${session.duration || '1.0'} hr PT</span>`;
+}
+
+function nextSessionHTML(session) {
   if (!session) return 'Ready for your next session';
   const date = new Date(session.datetime);
   const label = date.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
-  return `Next PT: ${label} at ${formatSessionTime(session)}`;
+  return `<span class="today-focus-prefix">Next PT</span><span class="today-focus-main">${label}</span><span class="today-focus-sub">${formatSessionTime(session)}</span>`;
 }
 
 function startOfWeek(date) {

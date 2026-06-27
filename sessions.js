@@ -60,8 +60,10 @@ export function sessionCardHTML(s, options = {}) {
   const month = dt.toLocaleString('en', { month: 'short' }).toUpperCase();
   const weekday = dt.toLocaleString('en', { weekday: 'short' }).toUpperCase();
   const time = dt.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
-  const dur = s.duration ? ` · ${s.duration} hr` : '';
-  const loc = s.location ? ` · ${s.location}` : '';
+  const sessionMeta = [time, s.duration ? `${s.duration} hr` : '', s.location || '']
+    .filter(Boolean)
+    .map(item => `<span>${item}</span>`)
+    .join('');
   const notes = s.notes || (s.exercises?.length ? `${s.exercises.length} exercise${s.exercises.length > 1 ? 's' : ''} logged` : '');
   const dot = eventDotHTML(s, 'session-status-dot');
   const typeLabel = getWorkoutTypeLabel(s);
@@ -74,7 +76,7 @@ export function sessionCardHTML(s, options = {}) {
   return `<div class="session-card ${s.status === 'completed' ? 'completed' : ''}">
     <div class="session-date-block"><div class="session-date-main">${dot}<div class="session-day">${day}</div></div><div class="session-month">${month}</div><div class="session-weekday">${weekday}</div></div>
     <div class="session-info">
-      <div class="session-time">${time}${dur}${loc}</div>
+      <div class="session-time">${sessionMeta}</div>
       <div class="session-notes">${typeLabel}${notes ? ` · ${notes}` : ''}</div>
     </div>
     <div class="session-actions">${actions}</div>
