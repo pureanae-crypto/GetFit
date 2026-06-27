@@ -65,13 +65,13 @@
     <div class="hero-label"><span class="hero-unit">hrs</span><span>remaining</span></div>
   </div>
   <div class="balance-breakdown">
-    <div class="balance-line"><span id="balance-booked-label">Upcoming sessions (0)</span><span id="balance-booked-hours">0 hrs</span></div>
-    <div class="balance-line"><span>Available balance</span><span id="balance-available-hours">0 hrs</span></div>
+    <div class="balance-line"><span>Booked</span><span id="balance-booked-hours">0 hrs</span></div>
+    <div class="balance-line"><span>Available</span><span id="balance-available-hours">0 hrs</span></div>
   </div>
   <div class="stats-row">
     <div class="stat-box"><div class="stat-value" id="stat-completed">0</div><div class="stat-label">Completed</div></div>
-    <div class="stat-box"><div class="stat-value" id="stat-upcoming">0</div><div class="stat-label">Upcoming</div></div>
-    <div class="stat-box"><div class="stat-value" id="stat-available">0</div><div class="stat-label">Available Balance</div></div>
+    <div class="stat-box"><div class="stat-value" id="stat-upcoming">0</div><div class="stat-label">Booked</div></div>
+    <div class="stat-box"><div class="stat-value" id="stat-available">0</div><div class="stat-label">Available</div></div>
   </div>
   <div id="progress-section" style="margin-bottom:32px; display:none;">
     <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--gray-400); margin-bottom:4px;">
@@ -83,7 +83,8 @@
       <div class="progress-segment progress-available" id="progress-available" style="width:0%"></div>
     </div>
   </div>
-  <div class="section-label">Upcoming Sessions</div>
+  <div id="overview-package-summary" class="overview-package-summary"></div>
+  <div class="section-label">Upcoming PT Sessions</div>
   <div id="upcoming-list"></div>
   <hr style="border:none; border-top:1px solid var(--gray-200); margin:32px 0;">
   <div class="section-label">Recently Completed</div>
@@ -93,35 +94,38 @@
 <!-- CALENDAR -->
 <div id="view-calendar" class="view">
   <div class="view-title-row">
-    <div class="section-label">Monthly View</div>
-    <button class="btn btn-primary btn-sm" onclick="openBookModal()">+ Book Session</button>
+    <div class="section-label">Calendar</div>
+    <button class="btn btn-primary btn-sm" onclick="openBookModal()">+ Book PT Session</button>
   </div>
   <div class="calendar-header">
-    <button class="btn btn-ghost" onclick="changeMonth(-1)">← Prev</button>
     <button class="calendar-month-label" id="cal-month-label" onclick="openCalendarJump()"></button>
-    <button class="btn btn-ghost" onclick="changeMonth(1)">Next →</button>
+    <div class="calendar-nav-actions">
+      <button class="btn btn-ghost" onclick="changeMonth(-1)">← Previous</button>
+      <button class="btn btn-ghost" onclick="jumpToToday()">Today</button>
+      <button class="btn btn-ghost" onclick="changeMonth(1)">Next →</button>
+    </div>
   </div>
   <div class="calendar-grid" id="calendar-grid"></div>
-  <div style="margin-top:16px; display:flex; gap:16px; flex-wrap:wrap; font-size:11px; color:var(--gray-400);">
-    <span><span style="color:#32D74B;">●</span> Upcoming</span>
-    <span><span style="color:var(--gray-400);">●</span> Completed</span>
-    <span><span style="color:#FF453A;">●</span> Cancelled</span>
+  <div class="calendar-legend">
+    <span><span class="event-dot status-upcoming event-type-pt"></span> Upcoming</span>
+    <span><span class="event-dot status-completed event-type-pt"></span> Completed</span>
+    <span><span class="event-dot status-cancelled event-type-pt"></span> Cancelled</span>
+    <span><span class="event-dot status-upcoming event-type-personal"></span> Personal Workout</span>
   </div>
 </div>
 
 <!-- LOG -->
 <div id="view-log" class="view">
-  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-    <div class="section-label" style="margin:0; border:none; padding:0;">Session History</div>
-    <button class="btn btn-outline btn-sm" onclick="openBookModal()">+ Book Session</button>
-  </div>
   <div id="log-list"></div>
 </div>
 
 <!-- PACKAGES -->
 <div id="view-packages" class="view">
-  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-    <div class="section-label" style="margin:0; border:none; padding:0;">Packages</div>
+  <div class="packages-page-head">
+    <div>
+      <div class="packages-title">Packages</div>
+      <div class="packages-subtitle">Package, payment, expiry and usage ledger</div>
+    </div>
     <button class="btn btn-primary btn-sm" onclick="openPackageModal()">+ New Package</button>
   </div>
   <div id="packages-list"></div>
@@ -133,6 +137,11 @@
     <div class="modal-header">
       <div class="modal-title" id="book-modal-title">Book Session</div>
       <button class="btn btn-ghost" onclick="closeModal('book-modal')">✕</button>
+    </div>
+    <div class="type-selector" aria-label="Workout type">
+      <input type="hidden" id="book-type" value="pt">
+      <button type="button" class="active" data-type="pt" onclick="setBookType('pt')">PT Session</button>
+      <button type="button" data-type="personal" onclick="setBookType('personal')">Personal Workout</button>
     </div>
     <div class="form-grid" style="margin-bottom:16px;">
       <div class="form-group"><label>Date</label><input type="date" id="book-date"></div>
@@ -166,26 +175,39 @@
   </div>
 </div>
 
-<!-- COMPLETE MODAL -->
+<!-- WORKOUT LOG MODAL -->
 <div class="modal-overlay" id="complete-modal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Mark Complete</div>
+      <div>
+        <div class="modal-title">Workout Log</div>
+        <div id="wl-subtitle" style="font-size:12px;color:var(--gray-400);margin-top:2px;letter-spacing:0.03em;"></div>
+      </div>
       <button class="btn btn-ghost" onclick="closeModal('complete-modal')">✕</button>
     </div>
-    <div id="complete-session-info" style="margin-bottom:20px; font-size:13px; color:var(--gray-600);"></div>
-    <div class="panel-title">Workout Log</div>
-    <div id="complete-exercise-rows"></div>
-    <button class="add-exercise-btn" onclick="openExercisePicker('complete')">
-      <span style="font-size:18px; line-height:1;">+</span> Add Exercise
+    <div class="type-selector" aria-label="Workout type">
+      <input type="hidden" id="complete-type" value="pt">
+      <button type="button" class="active" data-type="pt" onclick="setCompleteType('pt')">PT Session</button>
+      <button type="button" data-type="personal" onclick="setCompleteType('personal')">Personal Workout</button>
+    </div>
+    <div id="cx-list"></div>
+    <button class="add-exercise-btn" onclick="addCompleteExercise()">
+      <span style="font-size:18px;line-height:1;">+</span> Add Exercise
     </button>
+    <div class="cx-adjust-row" id="cx-adjust-row">
+      <span class="cx-adjust-label">Adjust focused kg</span>
+      <button class="cx-adjust-btn" onclick="adjustFocusedWeight(10)">+10</button>
+      <button class="cx-adjust-btn" onclick="adjustFocusedWeight(5)">+5</button>
+      <button class="cx-adjust-btn" onclick="adjustFocusedWeight(-5)">−5</button>
+      <button class="cx-adjust-btn" onclick="adjustFocusedWeight(-10)">−10</button>
+    </div>
+    <div class="cx-volume" id="cx-volume">Total volume: 0 kg</div>
     <div class="form-group" style="margin-top:16px;">
       <label>Session Notes</label>
       <textarea id="complete-notes" placeholder="How did it go? Any PRs, pain points..."></textarea>
     </div>
-    <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end; border-top:1px solid var(--gray-200); padding-top:16px;">
-      <button class="btn btn-ghost" onclick="closeModal('complete-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="confirmComplete()">Mark as Completed</button>
+    <div style="margin-top:20px;border-top:1px solid var(--gray-200);padding-top:16px;">
+      <button class="btn btn-primary" style="width:100%;" id="wl-save-btn" onclick="saveWorkoutLog()">Save &amp; Complete</button>
     </div>
   </div>
 </div>
@@ -198,10 +220,12 @@
       <button class="btn btn-ghost" onclick="closeModal('package-modal')">✕</button>
     </div>
     <div class="form-grid">
-      <div class="form-group form-full"><label>Package Name</label><input type="text" id="pkg-name" placeholder="e.g. June 2025 — 20 Sessions"></div>
-      <div class="form-group"><label>Payment Date</label><input type="date" id="pkg-date"></div>
+      <div class="form-group form-full"><label>Package Name</label><input type="text" id="pkg-name" placeholder="e.g. 40 hrs Package"></div>
+      <div class="form-group"><label>Purchase Date</label><input type="date" id="pkg-date"></div>
+      <div class="form-group"><label>Expiry Date</label><input type="date" id="pkg-expiry"></div>
       <div class="form-group"><label>Total Hours Purchased</label><input type="number" id="pkg-sessions" min="0.5" step="0.5" placeholder="e.g. 40"></div>
-      <div class="form-group"><label>Total Cost (HKD)</label><input type="number" id="pkg-cost" placeholder="4800"></div>
+      <div class="form-group"><label>Total Cost (HKD)</label><input type="number" id="pkg-cost" placeholder="27200"></div>
+      <div class="form-group"><label>Payment Method</label><input type="text" id="pkg-payment" placeholder="Credit Card"></div>
       <div class="form-group"><label>PT Name</label><input type="text" id="pkg-pt" placeholder="Trainer name"></div>
       <div class="form-group form-full"><label>Notes</label><input type="text" id="pkg-notes" placeholder="e.g. 20-session block, valid 6 months"></div>
     </div>
