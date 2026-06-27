@@ -71,6 +71,7 @@ export function renderLog(renderCtx) {
       <div class="log-controls">
         <button class="btn btn-primary btn-sm" onclick="openLogWorkoutModal()">+ Log Workout</button>
         <div class="log-segmented" aria-label="Volume period">
+          <button class="${logTrendMode === 'daily' ? 'active' : ''}" onclick="setLogTrendMode('daily')">Daily</button>
           <button class="${logTrendMode === 'weekly' ? 'active' : ''}" onclick="setLogTrendMode('weekly')">Weekly</button>
           <button class="${logTrendMode === 'monthly' ? 'active' : ''}" onclick="setLogTrendMode('monthly')">Monthly</button>
         </div>
@@ -87,7 +88,7 @@ export function renderLog(renderCtx) {
 
     <section class="log-analytics">
       <div class="log-metric-label">Volume</div>
-      <div class="log-metric-value">${formatVolume(currentVolume)} kg <span>${logTrendMode === 'weekly' ? 'this week' : 'this month'}</span></div>
+      <div class="log-metric-value">${formatVolume(currentVolume)} kg <span>${trendMetricSuffix(logTrendMode)}</span></div>
       ${trendChartHTML(buckets)}
       <div class="log-body-summary">${summaryRows}</div>
     </section>
@@ -97,7 +98,7 @@ export function renderLog(renderCtx) {
 }
 
 function setLogTrendMode(mode) {
-  logTrendMode = mode === 'monthly' ? 'monthly' : 'weekly';
+  logTrendMode = ['daily', 'weekly', 'monthly'].includes(mode) ? mode : 'weekly';
   ctx?.rerenderActive();
 }
 
@@ -205,6 +206,10 @@ function buildBodyPartDistribution(sessions) {
     .sort((a, b) => b.volume - a.volume);
 }
 
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 function startOfWeek(date) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   d.setDate(d.getDate() - d.getDay());
@@ -216,22 +221,32 @@ function startOfMonth(date) {
 }
 
 function bucketKey(date, mode) {
-  const d = mode === 'weekly' ? startOfWeek(date) : startOfMonth(date);
+  let d;
+  if (mode === 'daily') d = startOfDay(date);
+  else d = mode === 'weekly' ? startOfWeek(date) : startOfMonth(date);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function bucketLabel(date, mode) {
   if (mode === 'monthly') return date.toLocaleDateString('en', { month: 'short' });
+  if (mode === 'daily') return date.toLocaleDateString('en', { weekday: 'short' });
   return date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
 
+function trendMetricSuffix(mode) {
+  if (mode === 'daily') return 'today';
+  if (mode === 'monthly') return 'this month';
+  return 'this week';
+}
+
 function buildTrendBuckets(sessions, mode, bodyPart) {
-  const count = mode === 'weekly' ? 8 : 6;
+  const count = mode === 'daily' ? 7 : mode === 'weekly' ? 8 : 6;
   const now = new Date();
-  const currentStart = mode === 'weekly' ? startOfWeek(now) : startOfMonth(now);
+  const currentStart = mode === 'daily' ? startOfDay(now) : mode === 'weekly' ? startOfWeek(now) : startOfMonth(now);
   const buckets = Array.from({ length: count }, (_, i) => {
     const date = new Date(currentStart);
-    if (mode === 'weekly') date.setDate(currentStart.getDate() - (count - 1 - i) * 7);
+    if (mode === 'daily') date.setDate(currentStart.getDate() - (count - 1 - i));
+    else if (mode === 'weekly') date.setDate(currentStart.getDate() - (count - 1 - i) * 7);
     else date.setMonth(currentStart.getMonth() - (count - 1 - i));
     return { key: bucketKey(date, mode), label: bucketLabel(date, mode), volume: 0 };
   });
@@ -262,7 +277,7 @@ function trendChartHTML(buckets) {
     <line x1="${padX}" y1="${baseline}" x2="${width - padX}" y2="${baseline}"></line>
     <polyline points="${line}"></polyline>
     ${points.map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="2"></circle>`).join('')}
-    ${points.map((point, i) => i === 0 || i === points.length - 1 ? `<text x="${point.x.toFixed(1)}" y="${height - 4}" text-anchor="${i === 0 ? 'start' : 'end'}">${point.label}</text>` : '').join('')}
+    ${points.map((point, i) => i === 0 || i === points.length - 1 || buckets.length === 7 ? `<text x="${point.x.toFixed(1)}" y="${height - 4}" text-anchor="${i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'}">${point.label}</text>` : '').join('')}
   </svg>`;
 }
 
