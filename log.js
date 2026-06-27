@@ -284,6 +284,16 @@ function trendChartHTML(buckets, mode) {
   const line = points.map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
   const baseline = height - padY;
   return `<svg class="log-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Volume trend">
+    <style>
+      .log-chart-point { cursor: pointer; outline: none; }
+      .log-chart-point .log-chart-hit { fill: transparent; stroke: transparent; }
+      .log-chart-point .log-chart-tip { opacity: 0; pointer-events: none; transition: opacity 0.12s ease; }
+      .log-chart-point .log-chart-tip rect { fill: #0f0f0f; }
+      .log-chart-point .log-chart-tip text { fill: #ffffff; font-size: 10px; letter-spacing: 0; }
+      .log-chart-point .log-chart-tip .log-chart-tip-value { font-weight: 700; }
+      .log-chart-point:hover > circle:first-of-type, .log-chart-point:focus > circle:first-of-type { r: 4; }
+      .log-chart-point:hover .log-chart-tip, .log-chart-point:focus .log-chart-tip { opacity: 1; }
+    </style>
     <line x1="${padX}" y1="${baseline}" x2="${width - padX}" y2="${baseline}"></line>
     <polyline points="${line}"></polyline>
     ${points.map(point => chartPointHTML(point)).join('')}
