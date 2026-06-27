@@ -2,7 +2,6 @@ import { sessionCardHTML } from "./sessions.js";
 
 // ===== DASHBOARD =====
 export function renderDashboard(ctx) {
-  const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[char]));
   const pkg = ctx.getActivePackage();
   const stats = ctx.getPackageStats(pkg);
   const bookedSessions = ctx.state.sessions
@@ -16,6 +15,8 @@ export function renderDashboard(ctx) {
   document.getElementById('balance-as-of').textContent = `As of ${ctx.formatToday('short')}`;
   const balanceBreakdown = document.querySelector('.balance-breakdown');
   if (balanceBreakdown) balanceBreakdown.style.display = 'none';
+  const packageSummary = document.getElementById('overview-package-summary');
+  if (packageSummary) packageSummary.style.display = 'none';
   document.getElementById('stat-completed').innerHTML = ctx.formatStatHours(stats.completed);
   document.getElementById('stat-upcoming').innerHTML = ctx.formatStatHours(booked);
   document.getElementById('stat-available').innerHTML = ctx.formatStatHours(available);
@@ -30,22 +31,6 @@ export function renderDashboard(ctx) {
     document.getElementById('progress-available').style.width = (available / stats.total) * 100 + '%';
   } else {
     progressSection.style.display = 'none';
-  }
-
-  const packageSummary = document.getElementById('overview-package-summary');
-  if (packageSummary) {
-    if (pkg) {
-      const average = stats.total > 0 && pkg.cost ? Number(pkg.cost) / stats.total : 0;
-      packageSummary.innerHTML = `
-        <div class="overview-package-kicker">Active Package</div>
-        <div class="overview-package-main">${escapeHTML(pkg.name || `${ctx.formatHours(stats.total)} hrs Package`)} · ${average ? `${ctx.formatCurrency(average)}/hr` : 'Cost not set'}</div>
-        <div class="overview-package-meta">Expires ${ctx.formatPackageDate(pkg.expiry)}</div>`;
-    } else {
-      packageSummary.innerHTML = `
-        <div class="overview-package-kicker">Active Package</div>
-        <div class="overview-package-main">No active package</div>
-        <div class="overview-package-meta">Add a package to track PT hours and value.</div>`;
-    }
   }
 
   const visibleUpcoming = bookedSessions.slice(0, 5);
