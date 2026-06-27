@@ -126,9 +126,10 @@ function buildWeeklyInsight(sessions) {
   }
   const change = lastVolume ? Math.round(((volume - lastVolume) / lastVolume) * 100) : 0;
   const changeText = lastVolume ? `${change >= 0 ? '+' : ''}${change}% vs last week` : 'First tracked week';
+  const changeTone = lastVolume ? (change >= 0 ? 'up' : 'down') : 'neutral';
   return {
     title: `${thisWeek.length} workout${thisWeek.length === 1 ? '' : 's'} this week`,
-    copy: `${Math.round(volume).toLocaleString()} kg volume · ${changeText}`,
+    copy: `${Math.round(volume).toLocaleString()} kg volume · <span class="insight-comparison ${changeTone}">${changeText}</span>`,
     meta: topMuscle ? `Most trained: ${topMuscle}` : 'Keep the rhythm steady.'
   };
 }

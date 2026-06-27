@@ -732,6 +732,9 @@
     font-size: 14px;
     color: var(--text-secondary);
   }
+  .insight-comparison.up { color: var(--green); }
+  .insight-comparison.down { color: var(--red); }
+  .insight-comparison.neutral { color: var(--text-muted); }
   .insight-meta {
     margin-top: var(--space-4);
     color: var(--text-muted);
@@ -963,7 +966,7 @@
     color: var(--text-muted);
     margin-top: 8px;
   }
-  .log-comparison.up { color: var(--text-secondary); }
+  .log-comparison.up { color: var(--green); }
   .log-comparison.down { color: var(--red); }
   .log-analytics {
     border: 1px solid var(--border);
