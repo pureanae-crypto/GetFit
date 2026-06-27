@@ -1,10 +1,12 @@
 import { escapeHTML, formatCurrency, formatHours, formatPackageDate } from "./utils.js";
 
 let ctx = null;
+let editingPackageId = null;
 
 export function installPackageHandlers(context) {
   ctx = context;
   window.openPackageModal = openPackageModal;
+  window.editPackage = editPackage;
   window.savePackage = savePackage;
   window.setActivePackage = setActivePackage;
   window.deletePackage = deletePackage;
@@ -115,6 +117,7 @@ function renderActivePackage(pkg) {
       </div>
     </div>
     <div class="package-actions">
+      <button class="btn btn-outline btn-sm" onclick="editPackage('${pkg.id}')">Edit</button>
       <button class="btn btn-ghost btn-sm" onclick="deletePackage('${pkg.id}')">Delete</button>
     </div>
   </section>`;
@@ -147,6 +150,7 @@ function renderPastPackage(pkg) {
         ${renderPackageRow('Value Available', formatCurrency(money.available))}
       </div>
       <div class="package-actions">
+        <button class="btn btn-outline btn-sm" onclick="editPackage('${pkg.id}')">Edit</button>
         <button class="btn btn-outline btn-sm" onclick="setActivePackage('${pkg.id}')">Set Active</button>
         <button class="btn btn-ghost btn-sm" onclick="deletePackage('${pkg.id}')">Delete</button>
       </div>
@@ -158,7 +162,20 @@ function togglePackageDetails(id) {
   document.getElementById(`package-${id}`)?.classList.toggle('open');
 }
 
+function setPackageModalMode(mode) {
+  document.querySelector('#package-modal .modal-title').textContent = mode === 'edit' ? 'Edit Package' : 'New Package';
+  document.querySelector('#package-modal .btn-primary').textContent = mode === 'edit' ? 'Save Changes' : 'Save Package';
+}
+
+function clearPackageForm() {
+  ['pkg-name','pkg-sessions','pkg-cost','pkg-payment','pkg-pt','pkg-notes'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('pkg-expiry').value = '';
+}
+
 function openPackageModal() {
+  editingPackageId = null;
+  clearPackageForm();
+  setPackageModalMode('new');
   const today = new Date();
   const expiry = new Date(today);
   expiry.setMonth(expiry.getMonth() + 6);
@@ -167,14 +184,29 @@ function openPackageModal() {
   ctx.openModal('package-modal');
 }
 
+function editPackage(id) {
+  const pkg = ctx.state.packages.find(p => p.id === id);
+  if (!pkg) { ctx.showToast('Package not found'); return; }
+  editingPackageId = id;
+  setPackageModalMode('edit');
+  document.getElementById('pkg-name').value = pkg.name || '';
+  document.getElementById('pkg-date').value = pkg.date || '';
+  document.getElementById('pkg-expiry').value = pkg.expiry || '';
+  document.getElementById('pkg-sessions').value = pkg.sessions || '';
+  document.getElementById('pkg-cost').value = pkg.cost || '';
+  document.getElementById('pkg-payment').value = pkg.payment || '';
+  document.getElementById('pkg-pt').value = pkg.pt || '';
+  document.getElementById('pkg-notes').value = pkg.notes || '';
+  ctx.openModal('package-modal');
+}
+
 async function savePackage() {
   const name = document.getElementById('pkg-name').value.trim();
   const sessions = parseFloat(document.getElementById('pkg-sessions').value);
   const date = document.getElementById('pkg-date').value;
   if (!name || !sessions || !date) { ctx.showToast('Please fill in name, date, and total hours'); return; }
-  await Promise.all(ctx.state.packages.filter(p => p.active).map(p => ctx.fsSet('packages', p.id, {...p, active:false})));
-  const id = ctx.genId();
-  await ctx.fsSet('packages', id, {
+
+  const packageData = {
     name,
     date,
     expiry: document.getElementById('pkg-expiry').value || null,
@@ -182,12 +214,24 @@ async function savePackage() {
     cost: document.getElementById('pkg-cost').value || null,
     payment: document.getElementById('pkg-payment').value.trim() || null,
     pt: document.getElementById('pkg-pt').value || null,
-    notes: document.getElementById('pkg-notes').value || null,
-    active: true
-  });
+    notes: document.getElementById('pkg-notes').value || null
+  };
+
+  if (editingPackageId) {
+    const existing = ctx.state.packages.find(p => p.id === editingPackageId);
+    if (!existing) { ctx.showToast('Package not found'); return; }
+    await ctx.fsSet('packages', editingPackageId, { ...existing, ...packageData });
+    ctx.showToast('Package updated');
+  } else {
+    await Promise.all(ctx.state.packages.filter(p => p.active).map(p => ctx.fsSet('packages', p.id, {...p, active:false})));
+    const id = ctx.genId();
+    await ctx.fsSet('packages', id, { ...packageData, active: true });
+    ctx.showToast('Package saved & set as active');
+  }
+
+  editingPackageId = null;
   ctx.closeModal('package-modal');
-  ctx.showToast('Package saved & set as active');
-  ['pkg-name','pkg-sessions','pkg-cost','pkg-payment','pkg-pt','pkg-notes'].forEach(i => document.getElementById(i).value='');
+  clearPackageForm();
 }
 
 async function setActivePackage(id) {
