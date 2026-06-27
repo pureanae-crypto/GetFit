@@ -175,6 +175,15 @@
       <h2>Logging workouts</h2>
       <p>Use one row per exercise. For strength work, enter weight in kg and reps for each set. When you add another set, the app repeats the last weight and reps so you can adjust only what changed.</p>
       <p>For bodyweight movements like pull-ups, dips, push-ups, leg raises, planks, and sit-ups, leave weight empty unless extra load was added.</p>
+      <details class="guide-more">
+        <summary><span class="guide-more-label">+ View more</span><span class="guide-less-label">- View less</span></summary>
+        <div class="guide-more-content">
+          <div><strong>Weighted exercise:</strong> enter the external weight, reps, and sets.</div>
+          <div><strong>Bodyweight exercise:</strong> leave weight empty unless you used added weight.</div>
+          <div><strong>Unilateral exercise:</strong> log it the same way you do now; the app does not double-count sides unless both sides are clearly recorded later.</div>
+          <div><strong>Cardio:</strong> log duration and intensity details separately from strength load.</div>
+        </div>
+      </details>
     </section>
 
     <section class="guide-card">
@@ -186,6 +195,15 @@
         <div>Bodyweight: (65 kg estimate × exercise factor + added weight) × reps × sets</div>
       </div>
       <p>Traditional Volume remains useful for weighted exercise details where kg × reps is the clearest view.</p>
+      <details class="guide-more">
+        <summary><span class="guide-more-label">+ View more</span><span class="guide-less-label">- View less</span></summary>
+        <div class="guide-more-content">
+          <div><strong>Barbell squat:</strong> 80 kg × 8 reps × 3 sets = 1,920 kg Training Load.</div>
+          <div><strong>Pull-up:</strong> 65 kg × 0.95 × 5 reps = 309 kg Training Load.</div>
+          <div><strong>Weighted pull-up:</strong> (65 kg × 0.95 + 5 kg) × 5 reps = 334 kg Training Load.</div>
+          <div><strong>Volume:</strong> stays focused on external weight only, so it is clearest for traditional weighted exercise detail pages.</div>
+        </div>
+      </details>
     </section>
 
     <section class="guide-card">
@@ -197,6 +215,19 @@
         <div>Push-up example: 65 × 0.65 × 10 reps = 423 kg Training Load</div>
       </div>
       <p>These factors are directional. They help compare training trends, not measure exact force.</p>
+      <details class="guide-more">
+        <summary><span class="guide-more-label">+ View more</span><span class="guide-less-label">- View less</span></summary>
+        <div class="guide-more-content guide-more-grid">
+          <div><strong>Pull-up / chin-up:</strong> 0.95</div>
+          <div><strong>Dip:</strong> 0.90</div>
+          <div><strong>Push-up:</strong> 0.65</div>
+          <div><strong>Bodyweight squat:</strong> 0.65</div>
+          <div><strong>Sit-up:</strong> 0.35</div>
+          <div><strong>Leg raise:</strong> 0.25</div>
+          <div><strong>Plank:</strong> 0.20</div>
+          <div><strong>Source:</strong> starter app estimates for trend tracking, not clinical measurements.</div>
+        </div>
+      </details>
     </section>
 
     <section class="guide-card">
@@ -208,6 +239,18 @@
         <div>Barbell squat: 45% quads · 35% glutes · 15% hamstrings · 5% core</div>
       </div>
       <p>For unmapped exercises, the app infers a safe type and muscle split where possible, then logs an internal console warning for review.</p>
+      <details class="guide-more">
+        <summary><span class="guide-more-label">+ View more</span><span class="guide-less-label">- View less</span></summary>
+        <div class="guide-more-content">
+          <div><strong>Squat pattern:</strong> 45% quads · 35% glutes · 15% hamstrings · 5% core.</div>
+          <div><strong>Hinge pattern:</strong> 35% hamstrings · 30% glutes · 25% lower back · 10% traps.</div>
+          <div><strong>Lunge pattern:</strong> 40% quads · 35% glutes · 20% hamstrings · 5% adductors.</div>
+          <div><strong>Hip thrust:</strong> 70% glutes · 25% hamstrings · 5% quads.</div>
+          <div><strong>Vertical pull:</strong> 55% lats · 25% biceps · 15% rhomboids · 5% rear delts.</div>
+          <div><strong>Bench / push-up pattern:</strong> 55% chest · 25% triceps · 20% front delts.</div>
+          <div><strong>Core:</strong> 80% abs · 20% obliques. Plank uses 55% abs · 25% obliques · 20% lower back.</div>
+        </div>
+      </details>
     </section>
 
     <section class="guide-card">
@@ -215,6 +258,14 @@
       <h2>Unilateral work</h2>
       <p>Single-side movements such as split squats, lunges, cable kickbacks, and single-leg RDLs are flagged as unilateral.</p>
       <p>The app preserves your current logging behavior and does not double-count unless future data clearly records both sides.</p>
+      <details class="guide-more">
+        <summary><span class="guide-more-label">+ View more</span><span class="guide-less-label">- View less</span></summary>
+        <div class="guide-more-content">
+          <div><strong>Included examples:</strong> split squat, lunge, cable kickback, single-leg RDL.</div>
+          <div><strong>Current behavior:</strong> if you enter 20 kg × 10 reps × 3 sets, the app uses exactly that.</div>
+          <div><strong>Future behavior:</strong> if left/right tracking is added later, the app can count each side only when the data clearly says so.</div>
+        </div>
+      </details>
     </section>
 
     <section class="guide-card">
@@ -222,6 +273,14 @@
       <h2>Separate from strength</h2>
       <p>Cardio is tracked separately as cardio effort using duration and intensity inputs such as speed, level, or elevation.</p>
       <p>Cardio does not contribute to strength muscle-load charts unless it is explicitly marked as conditioning in the data.</p>
+      <details class="guide-more">
+        <summary><span class="guide-more-label">+ View more</span><span class="guide-less-label">- View less</span></summary>
+        <div class="guide-more-content">
+          <div><strong>Tracked separately:</strong> duration, level, speed, incline, distance, or estimated intensity when available.</div>
+          <div><strong>Not included:</strong> cardio is not mixed into strength muscle charts by default.</div>
+          <div><strong>Why:</strong> cardio strain and strength load answer different questions, so keeping them separate avoids noisy charts.</div>
+        </div>
+      </details>
     </section>
   </div>
 </div>
