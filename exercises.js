@@ -94,6 +94,7 @@ export const EXERCISE_DB = [
   { name:'Elliptical', cat:'Cardio', muscles:['quadriceps','hamstring','calves'] },
   { name:'Rowing Machine', cat:'Cardio', muscles:['lats','rhomboids','biceps','quadriceps'] },
   { name:'Stair Climber', cat:'Cardio', muscles:['gluteal','quadriceps','calves'] },
+  { name:'Stepper', cat:'Cardio', muscles:['gluteal','quadriceps','calves'] },
   { name:'Battle Ropes', cat:'Cardio', muscles:['front-deltoids','side-deltoids','abs'] },
 ];
 
