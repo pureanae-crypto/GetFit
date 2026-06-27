@@ -14,8 +14,8 @@ export function renderDashboard(ctx) {
 
   document.getElementById('hero-remaining').textContent = pkg ? ctx.formatHours(stats.remaining) : '-';
   document.getElementById('balance-as-of').textContent = `As of ${ctx.formatToday('short')}`;
-  document.getElementById('balance-booked-hours').textContent = `${ctx.formatHours(booked)} hrs`;
-  document.getElementById('balance-available-hours').textContent = `${ctx.formatHours(available)} hrs`;
+  const balanceBreakdown = document.querySelector('.balance-breakdown');
+  if (balanceBreakdown) balanceBreakdown.style.display = 'none';
   document.getElementById('stat-completed').innerHTML = ctx.formatStatHours(stats.completed);
   document.getElementById('stat-upcoming').innerHTML = ctx.formatStatHours(booked);
   document.getElementById('stat-available').innerHTML = ctx.formatStatHours(available);
@@ -23,7 +23,8 @@ export function renderDashboard(ctx) {
   const progressSection = document.getElementById('progress-section');
   if (pkg && stats.total > 0) {
     progressSection.style.display = 'block';
-    document.getElementById('progress-label').textContent = `Completed ${ctx.formatHours(stats.completed)} · Booked ${ctx.formatHours(booked)} · Remaining ${ctx.formatHours(stats.remaining)} hrs`;
+    const usedPercent = Math.min(100, Math.round((stats.completed / stats.total) * 100));
+    document.getElementById('progress-label').textContent = `${usedPercent}% used`;
     document.getElementById('progress-completed').style.width = Math.min(100, (stats.completed / stats.total) * 100) + '%';
     document.getElementById('progress-booked').style.width = (bookedSegment / stats.total) * 100 + '%';
     document.getElementById('progress-available').style.width = (available / stats.total) * 100 + '%';
