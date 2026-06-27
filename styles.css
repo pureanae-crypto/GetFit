@@ -505,8 +505,8 @@
     --gray-200: #e7e7e3;
     --gray-400: #8f8f89;
     --gray-600: #555550;
-    --red: #b45048;
-    --green: #2f9e44;
+    --red: #ff5f57;
+    --green: #28c840;
     --radius: 8px;
     --space-1: 4px;
     --space-2: 8px;
@@ -860,6 +860,17 @@
     border-width: 0;
   }
   .event-dot.status-upcoming { color: var(--green); }
+  .event-dot.status-cancelled { color: var(--red); }
+  .event-dot.event-type-personal {
+    background: transparent;
+    border-color: currentColor;
+  }
+  .event-dot.event-type-personal.status-upcoming { color: var(--green); }
+  .event-dot.event-type-personal.status-completed { color: var(--black); }
+  .event-dot.event-type-personal.status-cancelled { color: var(--red); }
+  .cell-dot.event-type-personal {
+    border-width: 1px;
+  }
   .calendar-header {
     gap: var(--space-4);
     margin-bottom: var(--space-5);
