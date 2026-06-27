@@ -45,7 +45,7 @@ export function renderLog(renderCtx) {
   const typeFiltered = filterSessionsByType(completed, logTypeFilter);
   const filtered = filterSessionsByBodyPart(typeFiltered, logBodyFilter);
   const buckets = buildTrendBuckets(filtered, logTrendMode, logBodyFilter);
-  const currentVolume = buckets[buckets.length - 1]?.volume || 0;
+  const currentBucket = buckets[buckets.length - 1] || { volume: 0, sessions: 0 };
   const distribution = buildBodyPartDistribution(filtered);
   const summaryRows = distribution.length
     ? distribution.map(item => `
@@ -86,9 +86,11 @@ export function renderLog(renderCtx) {
       </div>
     </div>
 
+    ${highlightsHTML(completed)}
+
     <section class="log-analytics">
       <div class="log-metric-label">Volume</div>
-      <div class="log-metric-value">${formatVolume(currentVolume)} kg <span>${trendMetricSuffix(logTrendMode)}</span></div>
+      <div class="log-metric-value">${formatVolume(currentBucket.volume)} kg <span>${trendMetricSuffix(logTrendMode, currentBucket.sessions)}</span></div>
       ${trendChartHTML(buckets, logTrendMode)}
       <div class="log-body-summary">${summaryRows}</div>
     </section>
@@ -122,6 +124,10 @@ function formatVolume(value) {
   return Math.round(value || 0).toLocaleString();
 }
 
+function pluralize(count, singular, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 function escapeHTML(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -130,6 +136,25 @@ function escapeHTML(value) {
 
 function getExerciseMeta(name) {
   return EXERCISE_DB.find(e => e.name.toLowerCase() === String(name || '').toLowerCase());
+}
+
+function isCardioExercise(exercise) {
+  return Boolean(exercise?.cardio) || getExerciseMeta(exercise?.name)?.cat === 'Cardio';
+}
+
+function cardioSummary(exercise) {
+  const name = String(exercise?.name || '').toLowerCase();
+  if (exercise?.cardio === 'treadmill' || name.includes('treadmill')) {
+    return [
+      exercise.speed ? `${exercise.speed} speed` : '',
+      exercise.time ? `${exercise.time} min` : '',
+      exercise.elevation ? `${exercise.elevation} elev` : ''
+    ].filter(Boolean).join(' · ') || 'Cardio logged';
+  }
+  return [
+    exercise.level ? `Level ${exercise.level}` : '',
+    exercise.time ? `${exercise.time} min` : ''
+  ].filter(Boolean).join(' · ') || 'Cardio logged';
 }
 
 export function getExerciseSets(exercise) {
@@ -147,11 +172,8 @@ export function getExerciseSets(exercise) {
 }
 
 export function getExerciseVolume(exercise) {
+  if (isCardioExercise(exercise)) return 0;
   return getExerciseSets(exercise).reduce((sum, set) => sum + set.weight * set.reps * set.sets, 0);
-}
-
-function getExercisesVolume(exercises) {
-  return Math.round((exercises || []).reduce((sum, exercise) => sum + getExerciseVolume(exercise), 0));
 }
 
 function getExerciseBodyParts(exercise) {
@@ -164,6 +186,7 @@ function getExerciseBodyParts(exercise) {
 
 function getSessionBodyVolumes(session) {
   return (session.exercises || []).reduce((acc, exercise) => {
+    if (isCardioExercise(exercise)) return acc;
     const volume = getExerciseVolume(exercise);
     const parts = getExerciseBodyParts(exercise);
     parts.forEach(part => { acc[part] = (acc[part] || 0) + volume / parts.length; });
@@ -179,7 +202,7 @@ function getSessionVolume(session, bodyPart = 'All') {
 
 function getPrimaryBodyPart(session) {
   const entries = Object.entries(getSessionBodyVolumes(session)).sort((a, b) => b[1] - a[1]);
-  return entries[0]?.[0] || 'All';
+  return entries[0]?.[0] || ((session.exercises || []).some(isCardioExercise) ? 'Cardio' : 'All');
 }
 
 function filterSessionsByBodyPart(sessions, filter) {
@@ -206,13 +229,53 @@ function buildBodyPartDistribution(sessions) {
     .sort((a, b) => b.volume - a.volume);
 }
 
+function bestLift(sessions) {
+  let best = null;
+  sessions.forEach(session => (session.exercises || []).forEach(exercise => {
+    if (isCardioExercise(exercise)) return;
+    getExerciseSets(exercise).forEach(set => {
+      if (!best || set.weight > best.weight) best = { name: exercise.name || 'Lift', weight: set.weight };
+    });
+  }));
+  return best;
+}
+
+function highlightsHTML(sessions) {
+  const best = bestLift(sessions);
+  const now = new Date();
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(now.getDate() - 6);
+  const recentVolume = sessions
+    .filter(session => startOfDay(new Date(session.completedAt || session.datetime)) >= startOfDay(sevenDaysAgo))
+    .reduce((sum, session) => sum + getSessionVolume(session), 0);
+  const weekStart = startOfWeek(now);
+  const weekSessions = sessions.filter(session => startOfDay(new Date(session.completedAt || session.datetime)) >= weekStart).length;
+  return `<section style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--gray-200);border-bottom:1px solid var(--gray-200);margin:-6px 0 28px;">
+    <div style="padding:12px 18px 12px 0;border-right:1px solid var(--gray-200);">
+      <div class="log-metric-label">Best Lift</div>
+      <div style="font-size:16px;font-weight:600;line-height:1.2;">${best ? `${formatVolume(best.weight)} kg` : '—'}</div>
+      <div class="log-muted">${best ? escapeHTML(best.name) : 'No lifts yet'}</div>
+    </div>
+    <div style="padding:12px 18px;border-right:1px solid var(--gray-200);">
+      <div class="log-metric-label">7-Day Volume</div>
+      <div style="font-size:16px;font-weight:600;line-height:1.2;">${formatVolume(recentVolume)} kg</div>
+      <div class="log-muted">Latest 7 days</div>
+    </div>
+    <div style="padding:12px 0 12px 18px;">
+      <div class="log-metric-label">This Week</div>
+      <div style="font-size:16px;font-weight:600;line-height:1.2;">${weekSessions}</div>
+      <div class="log-muted">${pluralize(weekSessions, 'workout')}</div>
+    </div>
+  </section>`;
+}
+
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function startOfWeek(date) {
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  d.setDate(d.getDate() - d.getDay());
+  const d = startOfDay(date);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
   return d;
 }
 
@@ -243,10 +306,10 @@ function bucketSummaryLabel(date, mode) {
   return date.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-function trendMetricSuffix(mode) {
+function trendMetricSuffix(mode, sessions = 0) {
   if (mode === 'daily') return 'today';
   if (mode === 'monthly') return 'this month';
-  return 'this week';
+  return `this week · ${pluralize(sessions, 'workout')}`;
 }
 
 function buildTrendBuckets(sessions, mode, bodyPart) {
@@ -258,13 +321,16 @@ function buildTrendBuckets(sessions, mode, bodyPart) {
     if (mode === 'daily') date.setDate(currentStart.getDate() - (count - 1 - i));
     else if (mode === 'weekly') date.setDate(currentStart.getDate() - (count - 1 - i) * 7);
     else date.setMonth(currentStart.getMonth() - (count - 1 - i));
-    return { key: bucketKey(date, mode), label: bucketLabel(date, mode), summaryLabel: bucketSummaryLabel(date, mode), volume: 0 };
+    return { key: bucketKey(date, mode), label: bucketLabel(date, mode), summaryLabel: bucketSummaryLabel(date, mode), volume: 0, sessions: 0 };
   });
   const bucketMap = new Map(buckets.map(bucket => [bucket.key, bucket]));
   sessions.forEach(session => {
     const date = new Date(session.completedAt || session.datetime);
     const bucket = bucketMap.get(bucketKey(date, mode));
-    if (bucket) bucket.volume += getSessionVolume(session, bodyPart);
+    if (bucket) {
+      bucket.volume += getSessionVolume(session, bodyPart);
+      bucket.sessions += 1;
+    }
   });
   return buckets;
 }
@@ -296,25 +362,27 @@ function trendChartHTML(buckets, mode) {
     </style>
     <line x1="${padX}" y1="${baseline}" x2="${width - padX}" y2="${baseline}"></line>
     <polyline points="${line}"></polyline>
-    ${points.map(point => chartPointHTML(point)).join('')}
+    ${points.map(point => chartPointHTML(point, mode)).join('')}
     ${points.map((point, i) => i === 0 || i === points.length - 1 || mode === 'daily' ? `<text x="${point.x.toFixed(1)}" y="${height - 4}" text-anchor="${i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'}">${point.label}</text>` : '').join('')}
   </svg>`;
 }
 
-function chartPointHTML(point) {
-  const bubbleWidth = 138;
-  const bubbleHeight = 34;
+function chartPointHTML(point, mode) {
+  const bubbleWidth = 148;
+  const bubbleHeight = mode === 'weekly' ? 46 : 34;
   const rawX = point.x - bubbleWidth / 2;
   const bubbleX = Math.max(4, Math.min(720 - bubbleWidth - 4, rawX));
   const bubbleY = Math.max(4, point.y - bubbleHeight - 10);
   const labelX = bubbleX + bubbleWidth / 2;
-  return `<g class="log-chart-point" tabindex="0" aria-label="${escapeHTML(point.summaryLabel)} ${formatVolume(point.volume)} kg" onclick="this.focus()">
+  const sessionLine = mode === 'weekly' ? `<text class="log-chart-tip-value" x="${labelX.toFixed(1)}" y="${(bubbleY + 39).toFixed(1)}" text-anchor="middle">${pluralize(point.sessions, 'workout')}</text>` : '';
+  return `<g class="log-chart-point" tabindex="0" aria-label="${escapeHTML(point.summaryLabel)} ${formatVolume(point.volume)} kg ${pluralize(point.sessions, 'workout')}" onclick="this.focus()">
     <circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="2.5"></circle>
     <circle class="log-chart-hit" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="16"></circle>
     <g class="log-chart-tip">
       <rect x="${bubbleX.toFixed(1)}" y="${bubbleY.toFixed(1)}" width="${bubbleWidth}" height="${bubbleHeight}" rx="2"></rect>
       <text class="log-chart-tip-title" x="${labelX.toFixed(1)}" y="${(bubbleY + 13).toFixed(1)}" text-anchor="middle">${escapeHTML(point.summaryLabel)}</text>
       <text class="log-chart-tip-value" x="${labelX.toFixed(1)}" y="${(bubbleY + 27).toFixed(1)}" text-anchor="middle">${formatVolume(point.volume)} kg</text>
+      ${sessionLine}
     </g>
   </g>`;
 }
@@ -328,9 +396,11 @@ function logSessionRowHTML(session) {
   const typeLabel = getWorkoutTypeLabel(session);
   const detailRows = (session.exercises || []).map(exercise => {
     const sets = getExerciseSets(exercise);
-    const setText = Array.isArray(exercise.sets)
-      ? sets.map(set => `${formatVolume(set.weight)}kg × ${set.reps}`).join(', ')
-      : sets.map(set => `${formatVolume(set.weight)}kg × ${set.reps} × ${set.sets}`).join(', ');
+    const setText = isCardioExercise(exercise)
+      ? cardioSummary(exercise)
+      : Array.isArray(exercise.sets)
+        ? sets.map(set => `${formatVolume(set.weight)}kg × ${set.reps}`).join(', ')
+        : sets.map(set => `${formatVolume(set.weight)}kg × ${set.reps} × ${set.sets}`).join(', ');
     return `<div class="log-exercise-row">
       <span>${escapeHTML(exercise.name || 'Exercise')}</span>
       <span>${setText || 'No sets logged'}</span>
