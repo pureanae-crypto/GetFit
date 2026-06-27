@@ -753,12 +753,35 @@
     transform: translateY(-1px);
   }
   .session-card.completed { opacity: 0.68; }
-  .session-date-block { min-width: 58px; }
-  .session-date-main {
-    display: flex;
+  .session-date-block {
+    min-width: 58px;
+    display: grid;
+    grid-template-columns: 8px 38px;
+    grid-template-rows: auto auto auto;
+    column-gap: 4px;
     align-items: center;
-    gap: 4px;
   }
+  .session-date-main {
+    display: contents;
+  }
+  .session-date-main .event-dot {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: center;
+    transform: translateY(-1px);
+  }
+  .session-date-block .session-day {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+  }
+  .session-date-block .session-month,
+  .session-date-block .session-weekday {
+    grid-column: 2;
+    justify-self: center;
+  }
+  .session-date-block .session-month { grid-row: 2; }
+  .session-date-block .session-weekday { grid-row: 3; }
   .session-day { font-size: 28px; font-weight: 650; letter-spacing: 0; }
   .session-time { font-size: 15px; font-weight: 600; }
   .session-notes { font-size: 13px; color: var(--text-muted); }
@@ -836,7 +859,7 @@
     margin-top: 3px;
     border-width: 0;
   }
-  .event-dot.status-upcoming { color: var(--black); }
+  .event-dot.status-upcoming { color: var(--green); }
   .calendar-header {
     gap: var(--space-4);
     margin-bottom: var(--space-5);
