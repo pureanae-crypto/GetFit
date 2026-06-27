@@ -381,8 +381,11 @@ function loadCxExercises(exercises) {
     const block = makeCxBlock(ex.name, ex);
     if (!kind) {
       const setsContainer = block.querySelector('.cx-sets');
-      const sets = Array.isArray(ex.sets) ? ex.sets : (ex.reps ? [{ reps: ex.reps, weight: ex.weight }] : []);
-      sets.forEach(s => setsContainer.appendChild(makeCxSetRow(s.weight, s.reps)));
+      const sets = Array.isArray(ex.sets) ? ex.sets
+        : (ex.reps || ex.sets ? Array.from({ length: parseInt(ex.sets, 10) || 1 }, () => ({ reps: ex.reps, weight: ex.weight }))
+        : []);
+      const rowsToLoad = sets.length ? sets : [{ reps: '', weight: '' }];
+      rowsToLoad.forEach(s => setsContainer.appendChild(makeCxSetRow(s.weight, s.reps)));
       refreshSetNumbers(block);
     }
     list.appendChild(block);
