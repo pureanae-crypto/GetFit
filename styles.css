@@ -1032,14 +1032,30 @@
     overflow: hidden;
   }
   .log-body-track span { background: var(--black); }
+  .log-ledger {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--white);
+    overflow: hidden;
+  }
   .log-session,
   .package-history-item {
     border-bottom-color: var(--gray-100);
   }
+  .log-session:last-child {
+    border-bottom: none;
+  }
+  .log-session-main {
+    grid-template-columns: minmax(132px, 1.25fr) minmax(70px, 0.55fr) minmax(100px, 0.9fr) minmax(88px, 0.75fr) minmax(130px, 0.9fr);
+    gap: 18px;
+  }
   .log-session-main,
   .package-history-row {
-    padding: 16px 0;
+    padding: 16px 18px;
     font-size: 13px;
+  }
+  .log-session-detail {
+    padding: 0 18px 16px 18px;
   }
 
   .package-active {
@@ -1222,9 +1238,10 @@
     .log-metric-value { font-size: 30px; }
     .log-metric-value span { display: block; margin: 4px 0 0; }
     .log-body-summary { grid-template-columns: 1fr; gap: 8px; }
-    .log-session-main { grid-template-columns: 1fr; gap: 3px; padding: 13px 0; }
+    .log-session-main { grid-template-columns: 1fr; gap: 3px; padding: 14px 16px; }
     .log-session-mobile-meta { display: block; color: var(--gray-600); }
     .log-session-main span:nth-child(3), .log-session-main span:nth-child(4), .log-session-main span:nth-child(5) { display: none; }
     .log-session-main span:nth-child(6) { text-align: left; margin-top: 4px; color: var(--gray-400); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .log-session-detail { padding: 0 16px 14px 16px; }
     .log-exercise-row { grid-template-columns: 1fr; gap: 2px; }
   }
