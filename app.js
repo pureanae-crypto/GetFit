@@ -73,19 +73,18 @@ function renderLog() {
 // ===== MODAL HELPERS =====
 function openModal(id) {
   document.getElementById(id).classList.add('open');
+  document.body.classList.add('modal-open');
 }
 
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
+  if (!document.querySelector('.modal-overlay.open')) {
+    document.body.classList.remove('modal-open');
+  }
 }
 
 window.openModal = openModal;
 window.closeModal = closeModal;
-document.querySelectorAll('.modal-overlay').forEach(modal => {
-  modal.addEventListener('click', e => {
-    if (e.target === modal) modal.classList.remove('open');
-  });
-});
 
 // ===== TOAST =====
 let toastTimer;
