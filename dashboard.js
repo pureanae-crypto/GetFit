@@ -34,7 +34,7 @@ export function renderDashboard(ctx) {
     const usedPercent = Math.min(100, Math.round((stats.completed / stats.total) * 100));
     const bookedPercent = Math.min(100, Math.round((bookedSegment / stats.total) * 100));
     const availablePercent = Math.max(0, 100 - usedPercent - bookedPercent);
-    document.getElementById('progress-label').textContent = `${bookedPercent}% booked · ${availablePercent}% available`;
+    document.getElementById('progress-label').textContent = `${usedPercent}% completed · ${bookedPercent}% booked · ${availablePercent}% available`;
     document.getElementById('progress-completed').style.width = Math.min(100, (stats.completed / stats.total) * 100) + '%';
     document.getElementById('progress-booked').style.width = (bookedSegment / stats.total) * 100 + '%';
     document.getElementById('progress-available').style.width = (available / stats.total) * 100 + '%';
