@@ -1,7 +1,7 @@
 import { EXERCISE_DB } from "./exercises.js";
 
 let ctx = null;
-let logTrendMode = 'weekly';
+let logTrendMode = 'daily';
 let logBodyFilter = 'All';
 let logTypeFilter = 'All';
 const LOG_BODY_FILTERS = ['All', 'Back', 'Core', 'Shoulders', 'Legs / Glutes', 'Chest', 'Arms'];
@@ -89,7 +89,7 @@ export function renderLog(renderCtx) {
     <section class="log-analytics">
       <div class="log-metric-label">Volume</div>
       <div class="log-metric-value">${formatVolume(currentVolume)} kg <span>${trendMetricSuffix(logTrendMode)}</span></div>
-      ${trendChartHTML(buckets)}
+      ${trendChartHTML(buckets, logTrendMode)}
       <div class="log-body-summary">${summaryRows}</div>
     </section>
 
@@ -98,7 +98,7 @@ export function renderLog(renderCtx) {
 }
 
 function setLogTrendMode(mode) {
-  logTrendMode = ['daily', 'weekly', 'monthly'].includes(mode) ? mode : 'weekly';
+  logTrendMode = ['daily', 'weekly', 'monthly'].includes(mode) ? mode : 'daily';
   ctx?.rerenderActive();
 }
 
@@ -233,6 +233,16 @@ function bucketLabel(date, mode) {
   return date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
 
+function bucketSummaryLabel(date, mode) {
+  if (mode === 'monthly') return date.toLocaleDateString('en', { month: 'long', year: 'numeric' });
+  if (mode === 'weekly') {
+    const end = new Date(date);
+    end.setDate(end.getDate() + 6);
+    return `${date.toLocaleDateString('en', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en', { month: 'short', day: 'numeric' })}`;
+  }
+  return date.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 function trendMetricSuffix(mode) {
   if (mode === 'daily') return 'today';
   if (mode === 'monthly') return 'this month';
@@ -248,7 +258,7 @@ function buildTrendBuckets(sessions, mode, bodyPart) {
     if (mode === 'daily') date.setDate(currentStart.getDate() - (count - 1 - i));
     else if (mode === 'weekly') date.setDate(currentStart.getDate() - (count - 1 - i) * 7);
     else date.setMonth(currentStart.getMonth() - (count - 1 - i));
-    return { key: bucketKey(date, mode), label: bucketLabel(date, mode), volume: 0 };
+    return { key: bucketKey(date, mode), label: bucketLabel(date, mode), summaryLabel: bucketSummaryLabel(date, mode), volume: 0 };
   });
   const bucketMap = new Map(buckets.map(bucket => [bucket.key, bucket]));
   sessions.forEach(session => {
@@ -259,11 +269,11 @@ function buildTrendBuckets(sessions, mode, bodyPart) {
   return buckets;
 }
 
-function trendChartHTML(buckets) {
+function trendChartHTML(buckets, mode) {
   const width = 720;
   const height = 190;
   const padX = 18;
-  const padY = 22;
+  const padY = 24;
   const max = Math.max(...buckets.map(b => b.volume), 1);
   const step = buckets.length > 1 ? (width - padX * 2) / (buckets.length - 1) : 0;
   const points = buckets.map((bucket, i) => {
@@ -276,9 +286,27 @@ function trendChartHTML(buckets) {
   return `<svg class="log-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Volume trend">
     <line x1="${padX}" y1="${baseline}" x2="${width - padX}" y2="${baseline}"></line>
     <polyline points="${line}"></polyline>
-    ${points.map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="2"></circle>`).join('')}
-    ${points.map((point, i) => i === 0 || i === points.length - 1 || buckets.length === 7 ? `<text x="${point.x.toFixed(1)}" y="${height - 4}" text-anchor="${i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'}">${point.label}</text>` : '').join('')}
+    ${points.map(point => chartPointHTML(point)).join('')}
+    ${points.map((point, i) => i === 0 || i === points.length - 1 || mode === 'daily' ? `<text x="${point.x.toFixed(1)}" y="${height - 4}" text-anchor="${i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'}">${point.label}</text>` : '').join('')}
   </svg>`;
+}
+
+function chartPointHTML(point) {
+  const bubbleWidth = 138;
+  const bubbleHeight = 34;
+  const rawX = point.x - bubbleWidth / 2;
+  const bubbleX = Math.max(4, Math.min(720 - bubbleWidth - 4, rawX));
+  const bubbleY = Math.max(4, point.y - bubbleHeight - 10);
+  const labelX = bubbleX + bubbleWidth / 2;
+  return `<g class="log-chart-point" tabindex="0" aria-label="${escapeHTML(point.summaryLabel)} ${formatVolume(point.volume)} kg" onclick="this.focus()">
+    <circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="2.5"></circle>
+    <circle class="log-chart-hit" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="16"></circle>
+    <g class="log-chart-tip">
+      <rect x="${bubbleX.toFixed(1)}" y="${bubbleY.toFixed(1)}" width="${bubbleWidth}" height="${bubbleHeight}" rx="2"></rect>
+      <text class="log-chart-tip-title" x="${labelX.toFixed(1)}" y="${(bubbleY + 13).toFixed(1)}" text-anchor="middle">${escapeHTML(point.summaryLabel)}</text>
+      <text class="log-chart-tip-value" x="${labelX.toFixed(1)}" y="${(bubbleY + 27).toFixed(1)}" text-anchor="middle">${formatVolume(point.volume)} kg</text>
+    </g>
+  </g>`;
 }
 
 function logSessionRowHTML(session) {
