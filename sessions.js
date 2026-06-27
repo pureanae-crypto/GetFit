@@ -72,12 +72,12 @@ export function sessionCardHTML(s, options = {}) {
        ${options.showDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>` : ''}`
     : `<button class="btn btn-ghost btn-sm" onclick="openViewModal('${s.id}')">View</button>`;
   return `<div class="session-card ${s.status === 'completed' ? 'completed' : ''}">
-    <div class="session-date-block"><div style="display:flex;align-items:center;gap:4px;">${dot}<div class="session-day">${day}</div></div><div class="session-month">${month}</div><div class="session-weekday">${weekday}</div></div>
+    <div class="session-date-block"><div class="session-date-main">${dot}<div class="session-day">${day}</div></div><div class="session-month">${month}</div><div class="session-weekday">${weekday}</div></div>
     <div class="session-info">
       <div class="session-time">${time}${dur}${loc}</div>
       <div class="session-notes">${typeLabel}${notes ? ` · ${notes}` : ''}</div>
     </div>
-    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">${actions}</div>
+    <div class="session-actions">${actions}</div>
   </div>`;
 }
 

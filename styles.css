@@ -506,7 +506,7 @@
     --gray-400: #8f8f89;
     --gray-600: #555550;
     --red: #b45048;
-    --green: #30d158;
+    --green: #2f9e44;
     --radius: 8px;
     --space-1: 4px;
     --space-2: 8px;
@@ -678,7 +678,7 @@
     margin-top: 0;
   }
   .progress-completed { background: var(--black); }
-  .progress-booked { background: var(--green); }
+  .progress-booked { background: var(--black); opacity: 0.72; }
   .progress-available { background: var(--gray-100); }
   .progress-segment { transition: width 0.22s ease; }
 
@@ -709,7 +709,7 @@
 
   .dashboard-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.7fr) minmax(240px, 0.8fr);
+    grid-template-columns: minmax(0, 1.62fr) minmax(260px, 0.78fr);
     gap: var(--space-6);
     align-items: start;
     margin-bottom: var(--space-8);
@@ -719,6 +719,7 @@
     padding: var(--card-pad);
     position: sticky;
     top: 84px;
+    margin-top: 36px;
   }
   .insight-title {
     font-size: 18px;
@@ -737,6 +738,11 @@
   }
 
   .session-card {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr);
+    align-items: start;
+    column-gap: 18px;
+    row-gap: 8px;
     padding: 16px 18px;
     margin-bottom: 10px;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
@@ -748,9 +754,26 @@
   }
   .session-card.completed { opacity: 0.68; }
   .session-date-block { min-width: 58px; }
+  .session-date-main {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
   .session-day { font-size: 28px; font-weight: 650; letter-spacing: 0; }
   .session-time { font-size: 15px; font-weight: 600; }
   .session-notes { font-size: 13px; color: var(--text-muted); }
+  .session-actions {
+    grid-column: 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .session-actions .btn {
+    min-height: 30px;
+    padding-inline: 10px;
+  }
 
   .btn {
     min-height: 38px;
@@ -813,7 +836,7 @@
     margin-top: 3px;
     border-width: 0;
   }
-  .event-dot.status-upcoming { color: var(--green); }
+  .event-dot.status-upcoming { color: var(--black); }
   .calendar-header {
     gap: var(--space-4);
     margin-bottom: var(--space-5);
@@ -845,8 +868,8 @@
   }
   .calendar-cell:hover { background: #f9fbf8; }
   .calendar-cell.today .cell-num {
-    background: var(--green);
-    color: var(--black);
+    background: var(--black);
+    color: var(--white);
     font-weight: 700;
   }
   .cell-num { font-size: 13px; }
@@ -906,7 +929,7 @@
     color: var(--text-muted);
     margin-top: 8px;
   }
-  .log-comparison.up { color: #23783a; }
+  .log-comparison.up { color: var(--text-secondary); }
   .log-comparison.down { color: var(--red); }
   .log-analytics {
     border: 1px solid var(--border);
@@ -927,14 +950,14 @@
     height: 220px;
     margin: 20px 0 22px;
   }
-  .log-chart polyline { stroke: var(--green); stroke-width: 2; }
-  .log-chart circle { fill: var(--green); }
+  .log-chart polyline { stroke: var(--black); stroke-width: 2; }
+  .log-chart circle { fill: var(--black); }
   .log-body-track {
     height: 4px;
     border-radius: 999px;
     overflow: hidden;
   }
-  .log-body-track span { background: var(--green); }
+  .log-body-track span { background: var(--black); }
   .log-session,
   .package-history-item {
     border-bottom-color: var(--gray-100);
@@ -1029,15 +1052,15 @@
     }
     .insight-card {
       position: static;
+      margin-top: 0;
     }
     .session-card {
-      align-items: flex-start;
-      flex-wrap: wrap;
+      grid-template-columns: 58px minmax(0, 1fr);
       gap: 12px;
     }
-    .session-card > div:last-child {
-      width: 100%;
-      justify-content: flex-start !important;
+    .session-actions {
+      grid-column: 2;
+      padding-left: 0;
     }
     .calendar-nav-actions {
       width: 100%;
@@ -1076,7 +1099,8 @@
     .stats-row { grid-template-columns: 1fr; }
     .hero-number { font-size: 72px; }
     .nav-tab { padding: 8px 10px; font-size: 11px; }
-    .session-card { flex-wrap: wrap; }
+    .session-card { grid-template-columns: 54px minmax(0, 1fr); }
+    .session-actions { padding-left: 0; }
     .bottom-sheet { top: 5vh; bottom: 5vh; }
     .view-title-row { align-items: flex-start; }
     .packages-page-head { align-items: flex-start; flex-direction: column; gap: 14px; margin-bottom: 24px; }
