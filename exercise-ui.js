@@ -330,9 +330,11 @@ function onCxNameInput(input) {
 function addCxSet(btn) {
   const block = btn.closest('.cx-block');
   const setsContainer = btn.previousElementSibling;
-  const prev = setsContainer.querySelectorAll('.cx-weight');
-  const lastWeight = prev.length ? prev[prev.length - 1].value : '';
-  const row = makeCxSetRow(lastWeight, '');
+  const prevRows = setsContainer.querySelectorAll('.cx-set-row');
+  const lastRow = prevRows.length ? prevRows[prevRows.length - 1] : null;
+  const lastWeight = lastRow?.querySelector('.cx-weight')?.value || '';
+  const lastReps = lastRow?.querySelector('.cx-reps')?.value || '';
+  const row = makeCxSetRow(lastWeight, lastReps);
   setsContainer.appendChild(row);
   refreshSetNumbers(block);
   row.querySelector('.cx-weight').focus();
