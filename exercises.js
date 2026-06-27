@@ -2,6 +2,8 @@
 export const EXERCISE_DB = [
   { name:'Hip Thrust', cat:'Glutes', muscles:['gluteal','hamstring'] },
   { name:'Romanian Deadlift', cat:'Glutes', muscles:['hamstring','gluteal','lower-back'] },
+  { name:'Barbell Romanian Deadlift', cat:'Glutes', muscles:['hamstring','gluteal','lower-back'] },
+  { name:'Dumbbell Romanian Deadlift', cat:'Glutes', muscles:['hamstring','gluteal','lower-back'] },
   { name:'Cable Kickback', cat:'Glutes', muscles:['gluteal'] },
   { name:'Machine Standing Hip Abduction', cat:'Glutes', muscles:['abductors','gluteal'] },
   { name:'Machine Seated Hip Abduction', cat:'Glutes', muscles:['abductors','gluteal'] },
@@ -11,12 +13,16 @@ export const EXERCISE_DB = [
   { name:'Glute Bridge', cat:'Glutes', muscles:['gluteal','hamstring'] },
   { name:'Donkey Kick', cat:'Glutes', muscles:['gluteal'] },
   { name:'Squat', cat:'Legs', muscles:['quadriceps','gluteal','hamstring'] },
+  { name:'Barbell Squat', cat:'Legs', muscles:['quadriceps','gluteal','hamstring'] },
+  { name:'Dumbbell Squat', cat:'Legs', muscles:['quadriceps','gluteal','hamstring'] },
   { name:'Leg Press', cat:'Legs', muscles:['quadriceps','gluteal','hamstring'] },
   { name:'Leg Extension', cat:'Legs', muscles:['quadriceps'] },
   { name:'Leg Curl', cat:'Legs', muscles:['hamstring'] },
   { name:'Walking Lunge', cat:'Legs', muscles:['quadriceps','gluteal','hamstring'] },
   { name:'Reverse Lunge', cat:'Legs', muscles:['quadriceps','gluteal'] },
   { name:'Bulgarian Split Squat', cat:'Legs', muscles:['quadriceps','gluteal'] },
+  { name:'Barbell Bulgarian Split Squat', cat:'Legs', muscles:['quadriceps','gluteal'] },
+  { name:'Dumbbell Bulgarian Split Squat', cat:'Legs', muscles:['quadriceps','gluteal'] },
   { name:'Hack Squat', cat:'Legs', muscles:['quadriceps','gluteal'] },
   { name:'Goblet Squat', cat:'Legs', muscles:['quadriceps','gluteal'] },
   { name:'Calf Raise', cat:'Legs', muscles:['calves'] },
@@ -88,6 +94,7 @@ export const EXERCISE_DB = [
   { name:'Elliptical', cat:'Cardio', muscles:['quadriceps','hamstring','calves'] },
   { name:'Rowing Machine', cat:'Cardio', muscles:['lats','rhomboids','biceps','quadriceps'] },
   { name:'Stair Climber', cat:'Cardio', muscles:['gluteal','quadriceps','calves'] },
+  { name:'Stepper', cat:'Cardio', muscles:['gluteal','quadriceps','calves'] },
   { name:'Battle Ropes', cat:'Cardio', muscles:['front-deltoids','side-deltoids','abs'] },
 ];
 

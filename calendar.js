@@ -1,4 +1,5 @@
 let ctx = null;
+let pickerYear = new Date().getFullYear();
 
 export function installCalendarHandlers(context) {
   ctx = context;
@@ -7,6 +8,8 @@ export function installCalendarHandlers(context) {
   window.applyCalendarJump = applyCalendarJump;
   window.jumpToToday = jumpToToday;
   window.calCellClick = calCellClick;
+  window.changeCalendarPickerYear = changeCalendarPickerYear;
+  window.selectCalendarMonth = selectCalendarMonth;
 }
 
 export function renderCalendar() {
@@ -42,14 +45,59 @@ function changeMonth(dir) {
 }
 
 function openCalendarJump() {
-  document.getElementById('jump-month').value = ctx.state.calendarMonth;
-  document.getElementById('jump-year').value = ctx.state.calendarYear;
+  pickerYear = ctx.state.calendarYear;
+  renderCalendarMonthPicker();
   ctx.openModal('calendar-jump-modal');
 }
 
+function renderCalendarMonthPicker() {
+  const monthNames = Array.from({ length: 12 }, (_, i) => new Date(pickerYear, i, 1).toLocaleString('en', { month: 'short' }));
+  const currentMonth = ctx.state.calendarMonth;
+  const currentYear = ctx.state.calendarYear;
+  const today = new Date();
+  const modal = document.querySelector('#calendar-jump-modal .modal');
+  if (!modal) return;
+  modal.innerHTML = `
+    <div class="modal-header">
+      <button class="btn btn-ghost" style="padding:4px 8px;" onclick="changeCalendarPickerYear(-1)">←</button>
+      <div class="modal-title" style="flex:1;text-align:center;">${pickerYear}</div>
+      <button class="btn btn-ghost" style="padding:4px 8px;" onclick="changeCalendarPickerYear(1)">→</button>
+      <button class="btn btn-ghost" style="padding:4px 8px;" onclick="closeModal('calendar-jump-modal')">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:-4px;">
+      ${monthNames.map((name, month) => {
+        const isSelected = pickerYear === currentYear && month === currentMonth;
+        const isCurrentMonth = pickerYear === today.getFullYear() && month === today.getMonth();
+        return `<button class="btn ${isSelected ? 'btn-primary' : 'btn-outline'} btn-sm" style="height:42px;${isCurrentMonth && !isSelected ? 'border-color:var(--black);' : ''}" onclick="selectCalendarMonth(${month})">${name}</button>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:10px;justify-content:space-between;border-top:1px solid var(--gray-200);padding-top:16px;margin-top:18px;">
+      <button class="btn btn-outline btn-sm" onclick="jumpToToday()">Today</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('calendar-jump-modal')">Cancel</button>
+    </div>`;
+}
+
+function changeCalendarPickerYear(dir) {
+  pickerYear = Math.min(2100, Math.max(2020, pickerYear + dir));
+  renderCalendarMonthPicker();
+}
+
+function selectCalendarMonth(month) {
+  ctx.state.calendarMonth = Math.min(11, Math.max(0, month));
+  ctx.state.calendarYear = Math.min(2100, Math.max(2020, pickerYear));
+  ctx.closeModal('calendar-jump-modal');
+  renderCalendar();
+}
+
 function applyCalendarJump() {
-  const month = parseInt(document.getElementById('jump-month').value, 10);
-  const year = parseInt(document.getElementById('jump-year').value, 10);
+  const monthInput = document.getElementById('jump-month');
+  const yearInput = document.getElementById('jump-year');
+  if (!monthInput || !yearInput) {
+    selectCalendarMonth(ctx.state.calendarMonth);
+    return;
+  }
+  const month = parseInt(monthInput.value, 10);
+  const year = parseInt(yearInput.value, 10);
   if (Number.isNaN(month) || Number.isNaN(year)) { ctx.showToast('Choose a month and year'); return; }
   ctx.state.calendarMonth = Math.min(11, Math.max(0, month));
   ctx.state.calendarYear = Math.min(2100, Math.max(2020, year));

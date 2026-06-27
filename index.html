@@ -58,37 +58,65 @@
 
 <!-- DASHBOARD -->
 <div id="view-dashboard" class="view active">
-  <div class="section-label">Session Balance</div>
-  <div class="balance-as-of" id="balance-as-of">As of Jun 21, 2026</div>
-  <div class="hero-counter">
-    <div class="hero-number" id="hero-remaining">—</div>
-    <div class="hero-label"><span class="hero-unit">hrs</span><span>remaining</span></div>
+  <div class="dashboard-hero">
+    <div>
+      <div class="section-label">Today</div>
+      <div id="today-focus" class="today-focus">Ready for your next session</div>
+      <div class="balance-as-of" id="balance-as-of">As of Jun 21, 2026</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openBookModal()">+ Book PT Session</button>
   </div>
-  <div class="balance-breakdown">
-    <div class="balance-line"><span>Booked</span><span id="balance-booked-hours">0 hrs</span></div>
-    <div class="balance-line"><span>Available</span><span id="balance-available-hours">0 hrs</span></div>
-  </div>
+
+  <section class="balance-card">
+    <div class="balance-card-main">
+      <div class="section-label">PT Balance</div>
+      <div class="hero-counter">
+        <div class="hero-number" id="hero-remaining">—</div>
+        <div class="hero-label"><span class="hero-unit">hrs</span><span>remaining</span></div>
+      </div>
+    </div>
+    <div class="balance-card-side">
+      <div class="balance-breakdown">
+        <div class="balance-line"><span>Booked sessions <em id="balance-booked-count">(0)</em></span><span id="balance-booked-hours">0 hrs</span></div>
+        <div class="balance-line"><span>Available balance</span><span id="balance-available-hours">0 hrs</span></div>
+      </div>
+      <div id="progress-section" class="balance-progress" style="display:none;">
+        <div class="progress-label-row">
+          <span>Package split</span><span id="progress-label">0 / 0</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-segment progress-completed" id="progress-completed" style="width:0%"></div>
+          <div class="progress-segment progress-booked" id="progress-booked" style="width:0%"></div>
+          <div class="progress-segment progress-available" id="progress-available" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div class="stats-row">
     <div class="stat-box"><div class="stat-value" id="stat-completed">0</div><div class="stat-label">Completed</div></div>
     <div class="stat-box"><div class="stat-value" id="stat-upcoming">0</div><div class="stat-label">Booked</div></div>
     <div class="stat-box"><div class="stat-value" id="stat-available">0</div><div class="stat-label">Available</div></div>
   </div>
-  <div id="progress-section" style="margin-bottom:32px; display:none;">
-    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--gray-400); margin-bottom:4px;">
-      <span>Package Progress</span><span id="progress-label">0 / 0</span>
-    </div>
-    <div class="progress-bar">
-      <div class="progress-segment progress-completed" id="progress-completed" style="width:0%"></div>
-      <div class="progress-segment progress-booked" id="progress-booked" style="width:0%"></div>
-      <div class="progress-segment progress-available" id="progress-available" style="width:0%"></div>
-    </div>
+
+  <div class="dashboard-grid">
+    <section>
+      <div class="section-label">Upcoming PT Sessions</div>
+      <div id="upcoming-list"></div>
+    </section>
+    <aside class="insight-card" id="weekly-insight">
+      <div class="section-label">Weekly Insight</div>
+      <div class="insight-title">No workouts yet</div>
+      <div class="insight-copy">Start your first session →</div>
+    </aside>
   </div>
+
+  <section class="dashboard-section">
+    <div class="section-label">Recently Completed</div>
+    <div id="recent-completed-list"></div>
+  </section>
+
   <div id="overview-package-summary" class="overview-package-summary"></div>
-  <div class="section-label">Upcoming PT Sessions</div>
-  <div id="upcoming-list"></div>
-  <hr style="border:none; border-top:1px solid var(--gray-200); margin:32px 0;">
-  <div class="section-label">Recently Completed</div>
-  <div id="recent-completed-list"></div>
 </div>
 
 <!-- CALENDAR -->

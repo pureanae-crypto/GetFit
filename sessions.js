@@ -58,6 +58,7 @@ export function sessionCardHTML(s, options = {}) {
   const dt = new Date(s.datetime);
   const day = dt.getDate();
   const month = dt.toLocaleString('en', { month: 'short' }).toUpperCase();
+  const weekday = dt.toLocaleString('en', { weekday: 'short' }).toUpperCase();
   const time = dt.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
   const dur = s.duration ? ` · ${s.duration} hr` : '';
   const loc = s.location ? ` · ${s.location}` : '';
@@ -71,7 +72,7 @@ export function sessionCardHTML(s, options = {}) {
        ${options.showDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>` : ''}`
     : `<button class="btn btn-ghost btn-sm" onclick="openViewModal('${s.id}')">View</button>`;
   return `<div class="session-card ${s.status === 'completed' ? 'completed' : ''}">
-    <div class="session-date-block"><div style="display:flex;align-items:center;gap:4px;">${dot}<div class="session-day">${day}</div></div><div class="session-month">${month}</div></div>
+    <div class="session-date-block"><div style="display:flex;align-items:center;gap:4px;">${dot}<div class="session-day">${day}</div></div><div class="session-month">${month}</div><div class="session-weekday">${weekday}</div></div>
     <div class="session-info">
       <div class="session-time">${time}${dur}${loc}</div>
       <div class="session-notes">${typeLabel}${notes ? ` · ${notes}` : ''}</div>
