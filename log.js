@@ -230,16 +230,26 @@ function buildBodyPartDistribution(sessions) {
 }
 
 function liftStats(sessions) {
-  const lifts = [];
+  const sessionLifts = [];
   sessions.forEach(session => (session.exercises || []).forEach(exercise => {
     if (isCardioExercise(exercise)) return;
-    getExerciseSets(exercise).forEach(set => {
-      lifts.push({ name: exercise.name || 'Lift', weight: set.weight });
-    });
+    const sets = getExerciseSets(exercise);
+    const topSet = sets.reduce((best, set) => !best || set.weight > best.weight ? set : best, null);
+    if (topSet) {
+      sessionLifts.push({
+        name: exercise.name || 'Lift',
+        key: String(exercise.name || 'Lift').toLowerCase(),
+        weight: topSet.weight,
+        sessionId: session.id,
+        date: new Date(session.completedAt || session.datetime)
+      });
+    }
   }));
-  lifts.sort((a, b) => b.weight - a.weight);
-  const best = lifts[0] || null;
-  const previousBest = best ? lifts.find(lift => lift.weight < best.weight) : null;
+  sessionLifts.sort((a, b) => b.weight - a.weight || b.date - a.date);
+  const best = sessionLifts[0] || null;
+  const previousBest = best
+    ? sessionLifts.find(lift => lift.key === best.key && lift.sessionId !== best.sessionId && lift.weight < best.weight)
+    : null;
   return { best, previousBest };
 }
 
@@ -248,14 +258,21 @@ function mutedComparisonHTML(text, tone = 'neutral') {
   return `<div style="font-size:11px;font-weight:500;line-height:1.25;color:${color};letter-spacing:0;margin-top:4px;">${text}</div>`;
 }
 
-function differenceHTML(current, previous, label) {
+function volumeDifferenceHTML(current, previous, label) {
+  if (!previous) return mutedComparisonHTML(`0% ${label}`);
   const diff = current - previous;
-  if (!previous && !current) return mutedComparisonHTML(`No ${label} yet`);
-  if (!previous) return mutedComparisonHTML(`↑ ${formatVolume(Math.abs(diff))} ${label}`, 'up');
   if (Math.round(diff) === 0) return mutedComparisonHTML(`→ no change ${label}`);
   const isUp = diff > 0;
   const value = `${Math.round(Math.abs(diff) / previous * 100)}%`;
   return mutedComparisonHTML(`${isUp ? '↑' : '↓'} ${value} ${label}`, isUp ? 'up' : 'down');
+}
+
+function sessionDifferenceHTML(current, previous, label) {
+  const diff = current - previous;
+  if (!previous && !current) return mutedComparisonHTML(`No workouts ${label}`);
+  if (diff === 0) return mutedComparisonHTML(`→ no change ${label}`);
+  const isUp = diff > 0;
+  return mutedComparisonHTML(`${isUp ? '↑' : '↓'} ${pluralize(Math.abs(diff), 'workout')} ${label}`, isUp ? 'up' : 'down');
 }
 
 function highlightsHTML(sessions) {
@@ -295,12 +312,12 @@ function highlightsHTML(sessions) {
     <div style="padding:12px 18px;border-right:1px solid var(--gray-200);">
       <div class="log-metric-label">7-Day Volume</div>
       <div style="font-size:16px;font-weight:600;line-height:1.2;">${formatVolume(recentVolume)} kg</div>
-      ${differenceHTML(recentVolume, previousVolume, 'vs previous 7 days')}
+      ${volumeDifferenceHTML(recentVolume, previousVolume, 'vs previous 7 days')}
     </div>
     <div style="padding:12px 0 12px 18px;">
       <div class="log-metric-label">This Week</div>
       <div style="font-size:16px;font-weight:600;line-height:1.2;">${pluralize(weekSessions, 'workout')}</div>
-      ${differenceHTML(weekSessions, lastWeekSessions, 'vs last week')}
+      ${sessionDifferenceHTML(weekSessions, lastWeekSessions, 'vs last week')}
     </div>
   </section>`;
 }
