@@ -67,6 +67,13 @@ export function installExerciseUI(context) {
   };
 }
 
+function getCardioKind(name) {
+  const value = String(name || '').toLowerCase();
+  if (value.includes('treadmill')) return 'treadmill';
+  if (value.includes('stair') || value.includes('stepper')) return 'stairs';
+  return null;
+}
+
 function openExercisePicker(context) {
   pickerContext = context;
   pickerActiveCat = 'All';
@@ -120,21 +127,17 @@ function openCxPicker(btn) {
 function selectExercise(name) {
   const dbEntry = EXERCISE_DB.find(e => e.name === name);
   if (pickerContext === 'cx') {
-    const weight = getLastUsedWeight(name);
-    if (activeCxNameInput) {
-      activeCxNameInput.textContent = name;
-      activeCxNameInput.dataset.name = name;
-      const block = activeCxNameInput.closest('.cx-block');
-      if (weight) block.querySelectorAll('.cx-weight').forEach(el => { if (!el.value) el.value = weight; });
-      updateCxVolume();
-    } else {
-      const block = makeCxBlock(name);
+    const block = makeCxBlock(name);
+    const kind = getCardioKind(name);
+    if (!kind) {
+      const weight = getLastUsedWeight(name);
       const setsContainer = block.querySelector('.cx-sets');
       setsContainer.appendChild(makeCxSetRow(weight, ''));
       refreshSetNumbers(block);
-      document.getElementById('cx-list').appendChild(block);
-      updateCxVolume();
     }
+    if (activeCxNameInput) activeCxNameInput.closest('.cx-block').replaceWith(block);
+    else document.getElementById('cx-list').appendChild(block);
+    updateCxVolume();
   } else {
     const data = { name, sets: '', reps: '', weight: '', muscles: dbEntry?.muscles || [] };
     addExerciseRow(data, pickerContext === 'book' ? 'exercise-rows' : 'complete-exercise-rows');
@@ -148,10 +151,55 @@ function closePicker() {
   activeCxNameInput = null;
 }
 
+function cardioInputsHTML(data, kind) {
+  if (kind === 'treadmill') {
+    return `
+      <div class="ex-row-input-group">
+        <div class="ex-row-input-label">Speed</div>
+        <input class="ex-row-input" data-metric="speed" type="number" min="0" step="0.1" placeholder="—" value="${data?.speed || ''}">
+      </div>
+      <div class="ex-row-input-group">
+        <div class="ex-row-input-label">Min</div>
+        <input class="ex-row-input" data-metric="time" type="number" min="0" step="1" placeholder="30" value="${data?.time || ''}">
+      </div>
+      <div class="ex-row-input-group">
+        <div class="ex-row-input-label">Elev</div>
+        <input class="ex-row-input" data-metric="elevation" type="number" min="0" step="0.5" placeholder="—" value="${data?.elevation || ''}">
+      </div>`;
+  }
+  return `
+    <div class="ex-row-input-group">
+      <div class="ex-row-input-label">Level</div>
+      <input class="ex-row-input" data-metric="level" type="number" min="0" step="1" placeholder="—" value="${data?.level || ''}">
+    </div>
+    <div class="ex-row-input-group">
+      <div class="ex-row-input-label">Min</div>
+      <input class="ex-row-input" data-metric="time" type="number" min="0" step="1" placeholder="20" value="${data?.time || ''}">
+    </div>`;
+}
+
+function strengthInputsHTML(data) {
+  return `
+    <div class="ex-row-input-group">
+      <div class="ex-row-input-label">Sets</div>
+      <input class="ex-row-input" type="number" min="1" placeholder="4" value="${data?.sets||''}">
+    </div>
+    <div class="ex-row-input-group">
+      <div class="ex-row-input-label">Reps</div>
+      <input class="ex-row-input" type="text" placeholder="10" value="${data?.reps||''}">
+    </div>
+    <div class="ex-row-input-group">
+      <div class="ex-row-input-label">kg</div>
+      <input class="ex-row-input" type="number" step="0.5" placeholder="—" value="${data?.weight||''}">
+    </div>`;
+}
+
 function addExerciseRow(data, containerId = 'exercise-rows') {
   const div = document.createElement('div');
+  const kind = getCardioKind(data?.name);
   div.className = 'ex-row-card';
   div.dataset.muscles = JSON.stringify(data?.muscles || []);
+  div.dataset.cardioKind = kind || '';
   const musclesLabel = data?.muscles?.length
     ? `<div class="ex-row-muscles">${data.muscles.map(m=>m.replace(/-/g,' ')).join(', ')}</div>` : '';
   div.innerHTML = `
@@ -160,18 +208,7 @@ function addExerciseRow(data, containerId = 'exercise-rows') {
       ${musclesLabel}
     </div>
     <div class="ex-row-inputs">
-      <div class="ex-row-input-group">
-        <div class="ex-row-input-label">Sets</div>
-        <input class="ex-row-input" type="number" min="1" placeholder="4" value="${data?.sets||''}">
-      </div>
-      <div class="ex-row-input-group">
-        <div class="ex-row-input-label">Reps</div>
-        <input class="ex-row-input" type="text" placeholder="10" value="${data?.reps||''}">
-      </div>
-      <div class="ex-row-input-group">
-        <div class="ex-row-input-label">kg</div>
-        <input class="ex-row-input" type="number" step="0.5" placeholder="—" value="${data?.weight||''}">
-      </div>
+      ${kind ? cardioInputsHTML(data, kind) : strengthInputsHTML(data)}
     </div>
     <button class="ex-row-remove" onclick="this.closest('.ex-row-card').remove()">×</button>`;
   document.getElementById(containerId).appendChild(div);
@@ -179,11 +216,16 @@ function addExerciseRow(data, containerId = 'exercise-rows') {
 
 function getExerciseRows(containerId) {
   return [...document.querySelectorAll(`#${containerId} .ex-row-card`)].reduce((acc, card) => {
-    const inputs = card.querySelectorAll('input');
     const nameEl = card.querySelector('.ex-row-name-btn');
     const name = nameEl?.textContent?.trim();
     const muscles = JSON.parse(card.dataset.muscles || '[]');
-    if (name && name !== 'Choose exercise') {
+    const kind = card.dataset.cardioKind || getCardioKind(name);
+    if (!name || name === 'Choose exercise') return acc;
+    if (kind) {
+      const metric = key => card.querySelector(`[data-metric="${key}"]`)?.value.trim() || '';
+      acc.push({ name, muscles, cardio: kind, speed: metric('speed'), time: metric('time'), elevation: metric('elevation'), level: metric('level') });
+    } else {
+      const inputs = card.querySelectorAll('input');
       acc.push({ name, sets: inputs[0]?.value.trim(), reps: inputs[1]?.value.trim(), weight: inputs[2]?.value.trim(), muscles });
     }
     return acc;
@@ -231,18 +273,36 @@ function makeCxSetRow(weight, reps) {
   return row;
 }
 
-function makeCxBlock(name) {
+function cardioCxHTML(exercise, kind) {
+  if (kind === 'treadmill') {
+    return `
+      <div class="cx-col-headers"><span>Speed</span><span>Min</span><span>Elev</span></div>
+      <div class="ex-row-inputs">
+        <input class="ex-row-input cx-cardio-speed" type="number" min="0" step="0.1" placeholder="Speed" value="${exercise?.speed || ''}">
+        <input class="ex-row-input cx-cardio-time" type="number" min="0" step="1" placeholder="Min" value="${exercise?.time || ''}">
+        <input class="ex-row-input cx-cardio-elevation" type="number" min="0" step="0.5" placeholder="Elev" value="${exercise?.elevation || ''}">
+      </div>`;
+  }
+  return `
+    <div class="cx-col-headers"><span>Level</span><span>Min</span></div>
+    <div class="ex-row-inputs">
+      <input class="ex-row-input cx-cardio-level" type="number" min="0" step="1" placeholder="Level" value="${exercise?.level || ''}">
+      <input class="ex-row-input cx-cardio-time" type="number" min="0" step="1" placeholder="Min" value="${exercise?.time || ''}">
+    </div>`;
+}
+
+function makeCxBlock(name, exercise = {}) {
   updateCxDatalist();
+  const kind = getCardioKind(name);
   const block = document.createElement('div');
   block.className = 'cx-block';
+  block.dataset.cardioKind = kind || '';
   block.innerHTML = `
     <div class="cx-block-header">
       <button class="cx-name" onclick="openCxPicker(this)" data-name="${name || ''}">${name || 'Tap to choose exercise'}</button>
       <button class="cx-remove-ex" onclick="this.closest('.cx-block').remove();updateCxVolume()">Remove</button>
     </div>
-    <div class="cx-col-headers"><span></span><span>KG</span><span>REPS</span><span></span></div>
-    <div class="cx-sets"></div>
-    <button class="cx-add-set-btn" onclick="addCxSet(this)">+ Add Set</button>`;
+    ${kind ? cardioCxHTML(exercise, kind) : '<div class="cx-col-headers"><span></span><span>KG</span><span>REPS</span><span></span></div><div class="cx-sets"></div><button class="cx-add-set-btn" onclick="addCxSet(this)">+ Add Set</button>'}`;
   return block;
 }
 
@@ -259,7 +319,7 @@ function addCompleteExercise() {
 
 function onCxNameInput(input) {
   const name = input.value.trim();
-  if (!name) return;
+  if (!name || getCardioKind(name)) return;
   const weight = getLastUsedWeight(name);
   if (weight) {
     const block = input.closest('.cx-block');
@@ -280,31 +340,48 @@ function addCxSet(btn) {
 }
 
 function updateCxVolume() {
-  const vol = getCxExercises().reduce((sum, e) => sum + e.sets.reduce((s, set) => s + set.reps * set.weight, 0), 0);
+  const vol = getCxExercises().reduce((sum, e) => sum + (e.sets || []).reduce((s, set) => s + set.reps * set.weight, 0), 0);
   const el = document.getElementById('cx-volume');
   if (el) el.textContent = `Total volume: ${Math.round(vol)} kg`;
 }
 
 function getCxExercises() {
-  return [...document.querySelectorAll('#cx-list .cx-block')].map(block => ({
-    name: (block.querySelector('.cx-name').dataset.name || '').trim(),
-    sets: [...block.querySelectorAll('.cx-set-row')].map(row => ({
-      reps: parseInt(row.querySelector('.cx-reps').value) || 0,
-      weight: parseFloat(row.querySelector('.cx-weight').value) || 0,
-      unit: 'kg'
-    })).filter(s => s.reps > 0)
-  })).filter(e => e.name);
+  return [...document.querySelectorAll('#cx-list .cx-block')].map(block => {
+    const name = (block.querySelector('.cx-name').dataset.name || '').trim();
+    const kind = block.dataset.cardioKind || getCardioKind(name);
+    if (kind) {
+      return {
+        name,
+        cardio: kind,
+        speed: block.querySelector('.cx-cardio-speed')?.value || '',
+        time: block.querySelector('.cx-cardio-time')?.value || '',
+        elevation: block.querySelector('.cx-cardio-elevation')?.value || '',
+        level: block.querySelector('.cx-cardio-level')?.value || ''
+      };
+    }
+    return {
+      name,
+      sets: [...block.querySelectorAll('.cx-set-row')].map(row => ({
+        reps: parseInt(row.querySelector('.cx-reps').value) || 0,
+        weight: parseFloat(row.querySelector('.cx-weight').value) || 0,
+        unit: 'kg'
+      })).filter(s => s.reps > 0)
+    };
+  }).filter(e => e.name);
 }
 
 function loadCxExercises(exercises) {
   const list = document.getElementById('cx-list');
   list.innerHTML = '';
   (exercises || []).forEach(ex => {
-    const block = makeCxBlock(ex.name);
-    const setsContainer = block.querySelector('.cx-sets');
-    const sets = Array.isArray(ex.sets) ? ex.sets : (ex.reps ? [{ reps: ex.reps, weight: ex.weight }] : []);
-    sets.forEach(s => setsContainer.appendChild(makeCxSetRow(s.weight, s.reps)));
-    refreshSetNumbers(block);
+    const kind = ex.cardio || getCardioKind(ex.name);
+    const block = makeCxBlock(ex.name, ex);
+    if (!kind) {
+      const setsContainer = block.querySelector('.cx-sets');
+      const sets = Array.isArray(ex.sets) ? ex.sets : (ex.reps ? [{ reps: ex.reps, weight: ex.weight }] : []);
+      sets.forEach(s => setsContainer.appendChild(makeCxSetRow(s.weight, s.reps)));
+      refreshSetNumbers(block);
+    }
     list.appendChild(block);
   });
   updateCxVolume();
