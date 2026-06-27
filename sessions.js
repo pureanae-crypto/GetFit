@@ -132,12 +132,14 @@ async function saveSession() {
   const existing = currentEditId ? ctx.state.sessions.find(x => x.id === currentEditId) : null;
   const exercises = ctx.getExerciseRows('exercise-rows');
   const isDirectLog = sessionEntryMode === 'log' && !existing;
+  // When editing session details (not logging), preserve existing exercise data
+  const savedExercises = (currentEditId && sessionEntryMode === 'book') ? (existing?.exercises ?? exercises) : exercises;
   const sessionData = {
     datetime, duration: document.getElementById('book-duration').value,
     type,
     location: document.getElementById('book-location').value,
     notes: document.getElementById('book-notes').value,
-    exercises,
+    exercises: savedExercises,
     status: existing?.status || (isDirectLog ? 'completed' : 'booked'),
     packageId: type === 'pt' ? (existing?.packageId || (pkg ? pkg.id : null)) : null,
     completionNotes: existing?.completionNotes || null,
