@@ -1025,6 +1025,19 @@
   .guide-card p + p {
     margin-top: 10px;
   }
+  .guide-example {
+    display: grid;
+    gap: 6px;
+    margin: 14px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+  }
   .log-highlights {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
