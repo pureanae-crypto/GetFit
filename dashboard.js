@@ -1,4 +1,5 @@
 import { sessionCardHTML } from "./sessions.js";
+import { calculateSessionTrainingLoad } from "./training-load.js";
 
 // ===== DASHBOARD =====
 export function renderDashboard(ctx) {
@@ -100,11 +101,7 @@ function startOfWeek(date) {
 }
 
 function sessionVolume(session) {
-  if (Number.isFinite(Number(session.totalVolume))) return Number(session.totalVolume);
-  return (session.exercises || []).reduce((sum, exercise) => {
-    if (!Array.isArray(exercise.sets)) return sum;
-    return sum + exercise.sets.reduce((setSum, set) => setSum + (Number(set.weight) || 0) * (Number(set.reps) || 0), 0);
-  }, 0);
+  return calculateSessionTrainingLoad(session).totalLoad;
 }
 
 function buildWeeklyInsight(sessions) {
@@ -136,7 +133,7 @@ function buildWeeklyInsight(sessions) {
   const changeTone = lastVolume ? (change >= 0 ? 'up' : 'down') : 'neutral';
   return {
     title: `${thisWeek.length} workout${thisWeek.length === 1 ? '' : 's'} this week`,
-    copy: `${Math.round(volume).toLocaleString()} kg volume · <span class="insight-comparison ${changeTone}">${changeText}</span>`,
+    copy: `${Math.round(volume).toLocaleString()} kg training load · <span class="insight-comparison ${changeTone}">${changeText}</span>`,
     meta: topMuscle ? `Most trained: ${topMuscle}` : 'Keep the rhythm steady.'
   };
 }

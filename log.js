@@ -1,4 +1,5 @@
 import { EXERCISE_DB } from "./exercises.js";
+import { calculateSessionTrainingLoad } from "./training-load.js";
 
 let ctx = null;
 let logTrendMode = 'daily';
@@ -54,7 +55,7 @@ export function renderLog(renderCtx) {
           <span class="log-body-track"><span style="width:${item.percent}%"></span></span>
           <span>${item.percent}%</span>
         </div>`).join('')
-    : `<div class="log-muted">No volume for this filter yet</div>`;
+    : `<div class="log-muted">No training load for this filter yet</div>`;
   const rows = filtered.length
     ? filtered.map(logSessionRowHTML).join('')
     : `<div class="log-empty">
@@ -70,7 +71,7 @@ export function renderLog(renderCtx) {
       </div>
       <div class="log-controls">
         <button class="btn btn-primary btn-sm" onclick="openLogWorkoutModal()">+ Log Workout</button>
-        <div class="log-segmented" aria-label="Volume period">
+        <div class="log-segmented" aria-label="Training load period">
           <button class="${logTrendMode === 'daily' ? 'active' : ''}" onclick="setLogTrendMode('daily')">Daily</button>
           <button class="${logTrendMode === 'weekly' ? 'active' : ''}" onclick="setLogTrendMode('weekly')">Weekly</button>
           <button class="${logTrendMode === 'monthly' ? 'active' : ''}" onclick="setLogTrendMode('monthly')">Monthly</button>
@@ -89,7 +90,7 @@ export function renderLog(renderCtx) {
     ${highlightsHTML(completed)}
 
     <section class="log-analytics">
-      <div class="log-metric-label">Volume</div>
+      <div class="log-metric-label">Training Load</div>
       <div class="log-metric-value">${formatVolume(currentBucket.volume)} kg <span>${trendMetricSuffix(logTrendMode, currentBucket.sessions)}</span></div>
       ${trendChartHTML(buckets, logTrendMode)}
       <div class="log-body-summary">${summaryRows}</div>
@@ -185,19 +186,17 @@ function getExerciseBodyParts(exercise) {
 }
 
 function getSessionBodyVolumes(session) {
-  return (session.exercises || []).reduce((acc, exercise) => {
-    if (isCardioExercise(exercise)) return acc;
-    const volume = getExerciseVolume(exercise);
-    const parts = getExerciseBodyParts(exercise);
-    parts.forEach(part => { acc[part] = (acc[part] || 0) + volume / parts.length; });
+  const muscleLoad = calculateSessionTrainingLoad(session).muscleLoad;
+  return Object.entries(muscleLoad).reduce((acc, [muscle, load]) => {
+    const parts = getExerciseBodyParts({ name: muscle, muscles: [muscle] });
+    parts.forEach(part => { acc[part] = (acc[part] || 0) + load / parts.length; });
     return acc;
   }, {});
 }
 
 function getSessionVolume(session, bodyPart = 'All') {
   if (bodyPart !== 'All') return getSessionBodyVolumes(session)[bodyPart] || 0;
-  if (Number.isFinite(Number(session.totalVolume))) return Number(session.totalVolume);
-  return Object.values(getSessionBodyVolumes(session)).reduce((sum, value) => sum + value, 0);
+  return calculateSessionTrainingLoad(session).totalLoad;
 }
 
 function getPrimaryBodyPart(session) {
@@ -309,7 +308,7 @@ function highlightsHTML(sessions) {
       ${bestComparison}
     </div>
     <div class="log-highlight-card">
-      <div class="log-metric-label">7-Day Volume</div>
+      <div class="log-metric-label">7-Day Load</div>
       <div class="log-highlight-value">${formatVolume(recentVolume)} kg</div>
       ${volumeDifferenceHTML(recentVolume, previousVolume, 'vs previous 7 days')}
     </div>
@@ -401,7 +400,7 @@ function trendChartHTML(buckets, mode) {
   });
   const line = points.map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
   const baseline = height - padY;
-  return `<svg class="log-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Volume trend">
+  return `<svg class="log-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Training load trend">
     <style>
       .log-chart-point { cursor: pointer; outline: none; }
       .log-chart-point .log-chart-hit { fill: transparent; stroke: transparent; }
